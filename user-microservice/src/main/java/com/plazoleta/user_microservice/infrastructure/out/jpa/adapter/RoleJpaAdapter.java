@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -27,7 +26,7 @@ public class RoleJpaAdapter implements IRolePersistencePort {
 
     @Override
     public Role saveRole(Role role) {
-        if(iRoleRepository.findByName(role.getName()).isPresent()) {
+        if (iRoleRepository.findByName(role.getName()) != null) {
             throw new RoleAlreadyExistsException("Role already exists with name: " + role.getName().name());
         }
         RoleEntity entity = iRoleEntityMapper.toRoleEntity(role);
@@ -36,17 +35,16 @@ public class RoleJpaAdapter implements IRolePersistencePort {
     }
 
     @Override
-    public Optional<Role> getRole(Long id) {
+    public Role getRole(Long id) {
         RoleEntity entity = iRoleRepository.findById(id)
-                .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + id));
-        return Optional.ofNullable(iRoleEntityMapper.toRole(entity));
+                .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + id));;
+        return iRoleEntityMapper.toRole(entity);
     }
 
     @Override
-    public Optional<Role> getRoleByName(RoleList name) {
-        RoleEntity entity = iRoleRepository.findByName(name)
-                .orElseThrow(() -> new RoleNotFoundException("Role not found with name: " + name));
-        return Optional.ofNullable(iRoleEntityMapper.toRole(entity));
+    public Role getRoleByName(RoleList name) {
+        RoleEntity entity = iRoleRepository.findByName(name);
+        return iRoleEntityMapper.toRole(entity);
     }
 
     @Override
@@ -72,7 +70,7 @@ public class RoleJpaAdapter implements IRolePersistencePort {
         if (!iRoleRepository.existsById(id)) {
             throw new RoleNotFoundException("Cannot delete: Role not found with ID: " + id);
         }
-        if (isRoleAssignedToUsers(id)){
+        if (isRoleAssignedToUsers(id)) {
             throw new RoleAssignedException();
         }
         iRoleRepository.deleteById(id);

@@ -5,7 +5,6 @@ import com.plazoleta.user_microservice.domain.exception.UserNotFoundException;
 import com.plazoleta.user_microservice.domain.model.Email;
 import com.plazoleta.user_microservice.domain.model.User;
 import com.plazoleta.user_microservice.domain.spi.IUserPersistencePort;
-import com.plazoleta.user_microservice.infrastructure.exception.NotDataFoundException;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.entity.UserEntity;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.mapper.IUserEntityMapper;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.repository.IUserRepository;
@@ -13,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -33,25 +31,21 @@ public class UserJpaAdapter implements IUserPersistencePort {
     }
 
     @Override
-    public Optional<User> getUser(Long id) {
+    public User getUser(Long id) {
         UserEntity entity = iUserRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
-        return Optional.of(iUserEntityMapper.toUser(entity));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));;
+        return iUserEntityMapper.toUser(entity);
     }
 
     @Override
-    public Optional<User> getUserByEmail(Email email) {
-        UserEntity entity = iUserRepository.findByEmail(email.getValue())
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email.getValue()));
-        return Optional.of(iUserEntityMapper.toUser(entity));
+    public User getUserByEmail(Email email) {
+        UserEntity entity = iUserRepository.findByEmail(email.getValue());
+        return iUserEntityMapper.toUser(entity);
     }
 
     @Override
     public List<User> getAllUsers() {
         List<UserEntity> userEntityList = iUserRepository.findAll();
-        if (userEntityList.isEmpty()) {
-            throw new NotDataFoundException("No users found");
-        }
         return iUserEntityMapper.toUserList(userEntityList);
     }
 
