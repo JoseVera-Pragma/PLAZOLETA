@@ -34,9 +34,6 @@ public class User {
         if (builder.password == null || builder.password.isBlank()) {
             throw new IllegalArgumentException("Password is required");
         }
-        if (builder.role == null || builder.role.getName()==null){
-            throw new IllegalArgumentException("Role is required");
-        }
 
         this.id = builder.id;
         this.firstName = builder.firstName;
