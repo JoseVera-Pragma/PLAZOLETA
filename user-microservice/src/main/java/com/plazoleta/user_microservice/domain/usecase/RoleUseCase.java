@@ -3,6 +3,7 @@ package com.plazoleta.user_microservice.domain.usecase;
 import com.plazoleta.user_microservice.domain.api.IRoleServicePort;
 import com.plazoleta.user_microservice.domain.exception.RoleAlreadyExistsException;
 import com.plazoleta.user_microservice.domain.exception.RoleInUseException;
+import com.plazoleta.user_microservice.domain.exception.RoleNotFoundException;
 import com.plazoleta.user_microservice.domain.model.Role;
 import com.plazoleta.user_microservice.domain.model.RoleList;
 import com.plazoleta.user_microservice.domain.spi.IRolePersistencePort;
