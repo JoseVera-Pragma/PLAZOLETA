@@ -18,6 +18,19 @@ public class Role {
         this.description = description;
     }
 
+    public boolean isAdmin() {
+        return RoleList.ROLE_ADMIN.equals(name);
+    }
+    public boolean isOwner() {
+        return RoleList.ROLE_OWNER.equals(name);
+    }
+    public boolean isEmployed() {
+        return RoleList.ROLE_EMPLOYED.equals(name);
+    }
+    public boolean isCustomer() {
+        return RoleList.ROLE_CUSTOMER.equals(name);
+    }
+
     public String getDescription() {
         return description;
     }
