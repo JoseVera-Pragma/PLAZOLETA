@@ -19,4 +19,6 @@ public interface IRolePersistencePort {
     void updateRole(Role role);
 
     void deleRole(Long id);
+
+    boolean isRoleAssignedToUsers(Long roleId);
 }
