@@ -1,15 +1,16 @@
 package com.plazoleta.user_microservice.domain.usecase;
 
 import com.plazoleta.user_microservice.domain.api.IUserServicePort;
-import com.plazoleta.user_microservice.domain.exception.RoleNotFoundException;
-import com.plazoleta.user_microservice.domain.exception.UserAlreadyExistsException;
-import com.plazoleta.user_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.user_microservice.domain.exception.*;
 import com.plazoleta.user_microservice.domain.model.Email;
 import com.plazoleta.user_microservice.domain.model.Role;
 import com.plazoleta.user_microservice.domain.model.User;
 import com.plazoleta.user_microservice.domain.spi.IRolePersistencePort;
 import com.plazoleta.user_microservice.domain.spi.IUserPersistencePort;
+import com.plazoleta.user_microservice.domain.validation.UserValidator;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,23 +18,24 @@ public class UserUseCase implements IUserServicePort {
 
     private final IUserPersistencePort userPersistencePort;
     private final IRolePersistencePort rolePersistencePort;
+    private final UserValidator userValidator;
 
     public UserUseCase(IUserPersistencePort userPersistencePort, IRolePersistencePort rolePersistencePort) {
         this.userPersistencePort = userPersistencePort;
         this.rolePersistencePort = rolePersistencePort;
+        this.userValidator = new UserValidator(userPersistencePort);
     }
 
     @Override
-    public User saveUser(User user) {
-        Role role = rolePersistencePort.getRole(user.getRole().getId())
-                .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + user.getRole().getId()));
+    public User saveUser(User newUser, Role creatorRole) {
+        Role newUserRole = rolePersistencePort.getRoleByName(newUser.getRole().getName())
+                .orElseThrow(() -> new RoleNotFoundException("Role not found with Name: " + newUser.getRole().getName()));
 
-        if (userPersistencePort.getUserByEmail(user.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException("A user with email " + user.getEmail().getValue() + " already exists.");
-        }
+        newUser.setRole(newUserRole);
 
-        user.setRole(role);
-        return userPersistencePort.saveUser(user);
+        userValidator.validateUserCreation(newUser, creatorRole);
+
+        return userPersistencePort.saveUser(newUser);
     }
 
     @Override
@@ -54,18 +56,8 @@ public class UserUseCase implements IUserServicePort {
     }
 
     @Override
-    public void updateUser(User user) {
-        Optional<User> existingUser = userPersistencePort.getUser(user.getId());
-        if (existingUser.isEmpty()) {
-            throw new UserNotFoundException("Cannot update: User not found with ID: " + user.getId());
-        }
-
-        Optional<User> userByEmail = userPersistencePort.getUserByEmail(user.getEmail());
-
-        if (userByEmail.isPresent() && !userByEmail.get().getId().equals(user.getId())) {
-            throw new UserAlreadyExistsException("Cannot update: Email is already used by another user.");
-        }
-
+    public void updateUser(User user,Role creatorRole) {
+        userValidator.validateUserUpdate(user, creatorRole);
         userPersistencePort.updateUser(user);
     }
 
@@ -77,4 +69,5 @@ public class UserUseCase implements IUserServicePort {
         }
         userPersistencePort.deleteUser(id);
     }
+
 }
