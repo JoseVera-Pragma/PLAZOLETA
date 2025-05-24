@@ -7,6 +7,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
+import java.util.Optional;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
@@ -17,6 +18,7 @@ public interface IUserEntityMapper {
     @Mapping(target = "email", source = "email")
     @Mapping(target = "identityNumber", source = "identityNumber")
     @Mapping(target = "phoneNumber", source = "phoneNumber")
+    @Mapping(target = "role", source = "role")
     User toUser(UserEntity userEntity);
 
     UserEntity toUserEntity(User user);
