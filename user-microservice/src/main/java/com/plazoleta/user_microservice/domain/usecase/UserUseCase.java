@@ -15,28 +15,25 @@ public class UserUseCase implements IUserServicePort {
     private final IUserPersistencePort userPersistencePort;
     private final UserValidator userValidator;
 
-    public UserUseCase(IUserPersistencePort userPersistencePort) {
+    public UserUseCase(IUserPersistencePort userPersistencePort, UserValidator userValidator) {
         this.userPersistencePort = userPersistencePort;
-        this.userValidator = new UserValidator(userPersistencePort);
+        this.userValidator = userValidator;
     }
 
     @Override
     public User saveUser(User newUser, Role creatorRole) {
         userValidator.validateUserCreation(newUser, creatorRole);
-
         return userPersistencePort.saveUser(newUser);
     }
 
     @Override
     public User getUser(Long id) {
-        return userPersistencePort.getUser(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+        return userPersistencePort.getUser(id);
     }
 
     @Override
     public User getUserByEmail(Email email) {
-        return userPersistencePort.getUserByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        return userPersistencePort.getUserByEmail(email);
     }
 
     @Override
@@ -52,7 +49,7 @@ public class UserUseCase implements IUserServicePort {
 
     @Override
     public void deleteUser(Long id) {
-        if (userPersistencePort.getUser(id).isEmpty()) {
+        if (userPersistencePort.getUser(id) == null) {
             throw new UserNotFoundException("Cannot delete: User not found with ID: " + id);
         }
         userPersistencePort.deleteUser(id);
