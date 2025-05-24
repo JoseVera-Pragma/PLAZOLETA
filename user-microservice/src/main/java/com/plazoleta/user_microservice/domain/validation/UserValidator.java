@@ -26,19 +26,20 @@ public class UserValidator {
         validateOwnerAge(newUser);
     }
 
-    public void validateUserUpdate(User user,  Role updaterRole) {
+    public void validateUserUpdate(User user, Role updaterRole) {
         validateUserExists(user.getId());
         validateEmailNotTakenByAnother(user.getEmail(), user.getId());
-        validateRoleUpdatePermissions(user.getRole(),updaterRole);
+        validateRoleUpdatePermissions(user.getRole(), updaterRole);
+        validateOwnerAge(user);
     }
 
-    public void validateUserDelete(Long userId, Role deleterRole){
+    public void validateUserDelete(Long userId, Role deleterRole) {
         validateUserExists(userId);
         validateRoleDeletePermissions(userId, deleterRole);
     }
 
     private void validateUniqueEmail(Email email) {
-        if (userPersistencePort.getUserByEmail(email).isPresent()) {
+        if (userPersistencePort.getUserByEmail(email) != null) {
             throw new UserAlreadyExistsException("Email already exists: " + email.getValue());
         }
     }
@@ -69,14 +70,14 @@ public class UserValidator {
     }
 
     private void validateUserExists(Long userId) {
-        if (userPersistencePort.getUser(userId).isEmpty()) {
+        if (userPersistencePort.getUser(userId) == null) {
             throw new UserNotFoundException("Cannot update: User not found with ID: " + userId);
         }
     }
 
     private void validateEmailNotTakenByAnother(Email email, Long userId) {
-        Optional<User> userByEmail = userPersistencePort.getUserByEmail(email);
-        if (userByEmail.isPresent() && !userByEmail.get().getId().equals(userId)) {
+        User userByEmail = userPersistencePort.getUserByEmail(email);
+        if (userByEmail != null && !userByEmail.getId().equals(userId)) {
             throw new UserAlreadyExistsException("Email already exists: " + email.getValue());
         }
     }
@@ -94,8 +95,8 @@ public class UserValidator {
     }
 
     private void validateRoleDeletePermissions(Long id, Role deleterRole) {
-        Optional<User> user = userPersistencePort.getUser(id);
-        Role userRole = user.get().getRole();
+        User user = userPersistencePort.getUser(id);
+        Role userRole = user.getRole();
         if (deleterRole.isAdmin() && !userRole.isOwner()) {
             throw new RoleNotAllowedException("Admin can only delete users with Owner role");
         }
