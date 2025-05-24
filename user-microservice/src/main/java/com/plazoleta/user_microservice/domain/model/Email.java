@@ -13,7 +13,7 @@ public class Email {
     }
 
     public String getValue() {
-        return value;
+        return this.value;
     }
 
     @Override
