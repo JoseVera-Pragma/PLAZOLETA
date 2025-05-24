@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: user-microservice
+    version: 1.0.0
+
+  datasource:
+    url: jdbc:mysql://localhost/users
+    username: root
+    password: root
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+appdescription: API para gestionar usuarios
+appversion: 1.0.0
