@@ -35,7 +35,6 @@ public class UserValidator {
     public void validateUserDelete(Long userId, Role deleterRole){
         validateUserExists(userId);
         validateRoleDeletePermissions(userId, deleterRole);
-
     }
 
     private void validateUniqueEmail(Email email) {
