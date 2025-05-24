@@ -37,7 +37,6 @@ public class User {
         if (builder.role == null || builder.role.getName()==null){
             throw new IllegalArgumentException("Role is required");
         }
-        validateDateOfBirth(builder.dateOfBirth);
 
         this.id = builder.id;
         this.firstName = builder.firstName;
@@ -48,27 +47,6 @@ public class User {
         this.phoneNumber = builder.phoneNumber;
         this.password = builder.password;
         this.role = builder.role;
-    }
-
-    private void validateDateOfBirth(LocalDate dob) {
-        if (dob == null) {
-            throw new IllegalArgumentException("Date of birth is required");
-        }
-        if (dob.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Date of birth cannot be in the future");
-        }
-        if (!isAdult(dob)) {
-            throw new IllegalArgumentException("User must be at least 18 years old");
-        }
-    }
-
-    private boolean isAdult(LocalDate dob) {
-        return getAge(dob) >= 18;
-    }
-
-    public int getAge(LocalDate dob) {
-        if (dob == null) return 0;
-        return Period.between(dob, LocalDate.now()).getYears();
     }
 
     public static Builder builder() {
