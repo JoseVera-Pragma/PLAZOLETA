@@ -1,11 +1,9 @@
 package com.plazoleta.user_microservice;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-@Disabled
+@SpringBootTest(properties = "spring.profiles.active=test")
 class UserMicroserviceApplicationTests {
 
 	@Test
