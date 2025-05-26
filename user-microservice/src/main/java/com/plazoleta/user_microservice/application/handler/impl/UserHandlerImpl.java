@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +31,7 @@ public class UserHandlerImpl implements IUserHandler {
     public void createUser(UserRequestDto userRequestDto) {
         User user = iUserRequestMapper.toUser(userRequestDto);
         Role creatorRole = iRoleServicePort.getRoleByName(RoleList.ROLE_ADMIN);
-        Role newUserRole = resolveRoleToAssign(creatorRole);
+        Role newUserRole = resolveRoleToAssign(creatorRole).orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users."));
         user.setRole(newUserRole);
         iUserServicePort.saveUser(user, creatorRole);
     }
@@ -62,7 +63,7 @@ public class UserHandlerImpl implements IUserHandler {
         Role creatorRole = iRoleServicePort.getRoleByName(RoleList.ROLE_ADMIN);
 
         userToUpdate.setId(id);
-        userToUpdate.setRole(resolveRoleToAssign(creatorRole));
+        userToUpdate.setRole(resolveRoleToAssign(creatorRole).orElseThrow(()-> new IllegalArgumentException("The current role is not allowed to create users.")));
         iUserServicePort.updateUser(userToUpdate, creatorRole);
     }
 
@@ -72,16 +73,11 @@ public class UserHandlerImpl implements IUserHandler {
         iUserServicePort.deleteUser(id);
     }
 
-
-
-    private Role resolveRoleToAssign(Role creatorRole) {
+    private Optional<Role> resolveRoleToAssign(Role creatorRole) {
         if (creatorRole.isAdmin()) {
-            return iRoleServicePort.getRoleByName(RoleList.ROLE_OWNER);
-        } else if (creatorRole.isOwner()) {
-            return iRoleServicePort.getRoleByName(RoleList.ROLE_EMPLOYED);
-        } else {
-            return iRoleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER);
+            return Optional.ofNullable(iRoleServicePort.getRoleByName(RoleList.ROLE_OWNER));
         }
+        return Optional.empty();
     }
 
 }

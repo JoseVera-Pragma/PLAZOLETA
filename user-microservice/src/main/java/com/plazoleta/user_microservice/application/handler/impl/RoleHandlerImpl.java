@@ -56,7 +56,7 @@ public class RoleHandlerImpl implements IRoleHandler {
         Role existingRole = iRoleServicePort.getRole(id);
         existingRole.setName(RoleList.valueOf(roleRequestDto.getName()));
         existingRole.setDescription(roleRequestDto.getDescription());
-        iRoleServicePort.saveRole(existingRole);
+        iRoleServicePort.updateRole(existingRole);
     }
 
     @Override
