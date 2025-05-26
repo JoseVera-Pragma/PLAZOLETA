@@ -10,4 +10,6 @@ import org.mapstruct.ReportingPolicy;
     unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface IRoleRequestMapper {
     Role toRole(RoleRequestDto roleRequestDto);
+
+    RoleRequestDto toRoleRequestDto(Role role);
 }
