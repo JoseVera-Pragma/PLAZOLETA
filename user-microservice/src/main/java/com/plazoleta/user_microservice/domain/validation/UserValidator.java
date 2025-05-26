@@ -64,6 +64,9 @@ public class UserValidator {
         if (creatorRole.isOwner() && !newUserRole.isEmployed()) {
             throw new RoleNotAllowedException("Owner can only create Employed");
         }
+        if (creatorRole.isEmployed()) {
+            throw new RoleNotAllowedException("Employed cannot update roles");
+        }
         if (creatorRole.isCustomer()) {
             throw new RoleNotAllowedException("Customers cannot create other users");
         }
@@ -89,6 +92,9 @@ public class UserValidator {
         if (updaterRole.isOwner() && !newRole.isEmployed()) {
             throw new RoleNotAllowedException("Owner can only assign Employed role");
         }
+        if (updaterRole.isEmployed()) {
+            throw new RoleNotAllowedException("Employed cannot update roles");
+        }
         if (updaterRole.isCustomer()) {
             throw new RoleNotAllowedException("Customers cannot update roles");
         }
@@ -103,10 +109,11 @@ public class UserValidator {
         if (deleterRole.isOwner() && !userRole.isEmployed()) {
             throw new RoleNotAllowedException("Owner can only delete users with Employed role");
         }
+        if (deleterRole.isEmployed()) {
+            throw new RoleNotAllowedException("Employed cannot delete users");
+        }
         if (deleterRole.isCustomer()) {
             throw new RoleNotAllowedException("Customers cannot delete users");
         }
     }
-
-
 }
