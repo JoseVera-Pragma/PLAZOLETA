@@ -1,3 +1,8 @@
+server:
+  port: 8082
+  servlet:
+    context-path: /api/v1
+
 spring:
   application:
     name: plazoleta-microservice
@@ -12,5 +17,20 @@ spring:
     hibernate:
       ddl-auto: update
 
-appdescription: API para gestionar restarurantes
-appversin: 1.0.0
+logging:
+  level:
+    com.yourpackage.clients: DEBUG
+    feign.Client: DEBUG
+    feign.Logger: DEBUG
+
+user:
+  service:
+    url: localhost:8081/api/v1
+
+feign:
+  client:
+    config:
+      default:
+        loggerLevel: FULL
+  user-service:
+    url: http://localhost:8081/api/v1
