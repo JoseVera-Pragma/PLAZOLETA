@@ -23,13 +23,10 @@ public class RestaurantHandlerImpl implements IRestaurantHandler {
     @Override
     public RestaurantResponseDto createRestaurant(RestaurantRequestDto restaurantRequestDto) {
 
-        System.out.println("Inicio");
         Restaurant restaurant = restaurantRequestMapper.toRestaurant(restaurantRequestDto);
-        System.out.println("2");
 
         restaurantServicePort.createRestaurant(restaurant);
-        System.out.println("3");
-
+        
         return restaurantResponseMapper.toRestaurantResponseDto(restaurant);
     }
 }
