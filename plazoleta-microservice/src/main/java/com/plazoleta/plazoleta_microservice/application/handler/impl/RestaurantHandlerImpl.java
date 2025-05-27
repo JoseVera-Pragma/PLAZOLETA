@@ -26,7 +26,7 @@ public class RestaurantHandlerImpl implements IRestaurantHandler {
         Restaurant restaurant = restaurantRequestMapper.toRestaurant(restaurantRequestDto);
 
         restaurantServicePort.createRestaurant(restaurant);
-        
+
         return restaurantResponseMapper.toRestaurantResponseDto(restaurant);
     }
 }
