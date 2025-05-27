@@ -6,8 +6,8 @@ import java.util.Objects;
 
 public class Restaurant {
     private Long id;
-    private String name;
-    private Nit nit;
+    private RestaurantName name;
+    private RestaurantNit nit;
     private String address;
     private PhoneNumber phoneNumber;
     private String urlLogo;
@@ -15,8 +15,8 @@ public class Restaurant {
 
     private Restaurant(Builder builder) {
         this.id = builder.id;
-        this.name = builder.name;
-        this.nit = new Nit(builder.nit);
+        this.name = new RestaurantName(builder.name);
+        this.nit = new RestaurantNit(builder.nit);
         this.address = builder.address;
         this.phoneNumber = new PhoneNumber(builder.phoneNumber);
         this.urlLogo = builder.urlLogo;
@@ -118,11 +118,11 @@ public class Restaurant {
     }
 
     public String getName() {
-        return name;
+        return name.getValue();
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.name = new RestaurantName(name);
     }
 
     public String getNit() {
@@ -130,7 +130,7 @@ public class Restaurant {
     }
 
     public void setNit(String nit) {
-        this.nit = new Nit(nit);
+        this.nit = new RestaurantNit(nit);
     }
 
     public String getPhone() {

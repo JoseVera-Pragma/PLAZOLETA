@@ -5,10 +5,10 @@ import com.plazoleta.plazoleta_microservice.domain.exception.MissingNitException
 
 import java.util.Objects;
 
-public class Nit {
+public class RestaurantNit {
     private final String value;
 
-    public Nit(String value) {
+    public RestaurantNit(String value) {
         if (value == null || value.isBlank()) {
             throw new MissingNitException("Nit must be provided");
         } else if (!value.matches("^\\d{1,13}$")) {
@@ -25,7 +25,7 @@ public class Nit {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Nit that = (Nit) o;
+        RestaurantNit that = (RestaurantNit) o;
         return value.equals(that.value);
     }
 
