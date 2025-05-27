@@ -19,6 +19,10 @@ public class RestaurantJpaAdapter implements IRestaurantPersistencePort {
     public void saveRestaurant(Restaurant restaurant) {
         RestaurantEntity entity = restaurantEntityMapper.toRestaurantEntity(restaurant);
         restaurantRepository.save(entity);
+    }
 
+    @Override
+    public boolean existsByNit(String nit){
+        return restaurantRepository.existsByNit(nit);
     }
 }

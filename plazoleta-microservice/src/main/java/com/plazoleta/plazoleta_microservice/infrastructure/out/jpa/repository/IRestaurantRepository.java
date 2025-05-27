@@ -6,7 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface IRestaurantRepository extends JpaRepository<RestaurantEntity, Long> {
-
     boolean existsByNit(String nit);
-
 }
