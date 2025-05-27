@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserHandlerImplTest {
@@ -35,6 +36,9 @@ class UserHandlerImplTest {
 
     @Mock
     private IUserResponseMapper userResponseMapper;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserHandlerImpl userHandler;
@@ -74,6 +78,7 @@ class UserHandlerImplTest {
         when(userRequestMapper.toUser(requestDto)).thenReturn(user);
         when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(adminRole);
         when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(ownerRole);
+        when(passwordEncoder.encode("password")).thenReturn("$2a$10$abcdef");
 
         userHandler.createUser(requestDto);
 

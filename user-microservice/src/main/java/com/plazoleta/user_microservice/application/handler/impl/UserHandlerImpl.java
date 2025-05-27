@@ -11,6 +11,7 @@ import com.plazoleta.user_microservice.domain.model.Role;
 import com.plazoleta.user_microservice.domain.model.RoleList;
 import com.plazoleta.user_microservice.domain.model.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ public class UserHandlerImpl implements IUserHandler {
     private final IRoleServicePort iRoleServicePort;
     private final IUserRequestMapper iUserRequestMapper;
     private final IUserResponseMapper iUserResponseMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void createUser(UserRequestDto userRequestDto) {
@@ -33,6 +35,8 @@ public class UserHandlerImpl implements IUserHandler {
         Role creatorRole = iRoleServicePort.getRoleByName(RoleList.ROLE_ADMIN);
         Role newUserRole = resolveRoleToAssign(creatorRole).orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users."));
         user.setRole(newUserRole);
+        String passwordEncode = passwordEncoder.encode(userRequestDto.getPassword());
+        user.setPassword(passwordEncode);
         iUserServicePort.saveUser(user, creatorRole);
     }
 
@@ -64,6 +68,9 @@ public class UserHandlerImpl implements IUserHandler {
 
         userToUpdate.setId(id);
         userToUpdate.setRole(resolveRoleToAssign(creatorRole).orElseThrow(()-> new IllegalArgumentException("The current role is not allowed to create users.")));
+
+        String passwordEncode = passwordEncoder.encode(userRequestDto.getPassword());
+        userToUpdate.setPassword(passwordEncode);
         iUserServicePort.updateUser(userToUpdate, creatorRole);
     }
 

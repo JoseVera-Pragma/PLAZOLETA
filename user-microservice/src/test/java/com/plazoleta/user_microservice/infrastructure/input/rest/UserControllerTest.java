@@ -2,7 +2,6 @@ package com.plazoleta.user_microservice.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
-import com.plazoleta.user_microservice.domain.model.Role;
 import com.plazoleta.user_microservice.domain.model.RoleList;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.entity.RoleEntity;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.entity.UserEntity;
