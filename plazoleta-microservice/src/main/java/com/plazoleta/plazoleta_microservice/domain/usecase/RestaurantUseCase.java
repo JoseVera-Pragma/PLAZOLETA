@@ -16,8 +16,6 @@ public class RestaurantUseCase implements IRestaurantServicePort {
     public RestaurantUseCase(IRestaurantPersistencePort restaurantPersistencePort, IUserSecurityPort userSecurityPort) {
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.userSecurityPort = userSecurityPort;
-
-
     }
 
     @Override
