@@ -11,7 +11,7 @@ public class RestaurantNit {
     public RestaurantNit(String value) {
         if (value == null || value.isBlank()) {
             throw new MissingNitException("Nit must be provided");
-        } else if (value.matches("^\\d{1,13}$")) {
+        } else if (!value.matches("^\\d+$")) {
             throw new InvalidNitException("Nit is not valid: " + value);
         }
         this.value = value;
