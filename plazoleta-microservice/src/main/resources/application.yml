@@ -1,4 +1,4 @@
-sserver:
+server:
   port: 8082
   servlet:
     context-path: /api/v1
@@ -32,5 +32,3 @@ feign:
     config:
       default:
         loggerLevel: FULL
-  user-service:
-    url: http://localhost:8081/api/v1
