@@ -13,7 +13,7 @@ public class Restaurant {
     private String urlLogo;
     private Long idOwner;
 
-    private Restaurant(Builder builder) {
+    public Restaurant(Builder builder) {
         this.id = builder.id;
         this.name = new RestaurantName(builder.name);
         this.nit = new RestaurantNit(builder.nit);
@@ -133,11 +133,11 @@ public class Restaurant {
         this.nit = new RestaurantNit(nit);
     }
 
-    public String getPhone() {
+    public String getPhoneNumber() {
         return phoneNumber.getValue();
     }
 
-    public void setPhone(String phoneNumber) {
+    public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = new PhoneNumber(phoneNumber);
     }
 

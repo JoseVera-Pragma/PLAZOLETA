@@ -1,7 +1,6 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
 public class User {
-    private Long id;
     private String firstName;
     private String lastName;
     private String identityNumber;
@@ -12,7 +11,6 @@ public class User {
     private String role;
 
     private User(Builder builder) {
-        this.id = builder.id;
         this.firstName = builder.firstName;
         this.lastName = builder.lastName;
         this.identityNumber = builder.identityNumber;
@@ -21,6 +19,9 @@ public class User {
         this.email = builder.email;
         this.password = builder.password;
         this.role = builder.role;
+    }
+
+    public User() {
     }
 
     public String getDateOfBirth() {
@@ -33,10 +34,6 @@ public class User {
 
     public String getFirstName() {
         return firstName;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public String getIdentityNumber() {
@@ -60,7 +57,6 @@ public class User {
     }
 
     public static class Builder {
-        private Long id;
         private String firstName;
         private String lastName;
         private String identityNumber;
@@ -69,11 +65,6 @@ public class User {
         private String email;
         private String password;
         private String role;
-
-        public Builder id(Long id) {
-            this.id = id;
-            return this;
-        }
 
         public Builder firstName(String firstName) {
             this.firstName = firstName;

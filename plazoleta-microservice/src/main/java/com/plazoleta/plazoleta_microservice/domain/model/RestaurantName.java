@@ -11,7 +11,7 @@ public class RestaurantName {
     public RestaurantName(String value) {
         if (value == null || value.isBlank()) {
             throw new InvalidRestaurantNameException("Name must not be null or empty");
-        } else if (!value.matches("^\\d+$")) {
+        } else if (value.matches("^\\d+$")) {
             throw new InvalidNitException("Name must not contain only numbers");
         }
         this.value = value;
