@@ -1,6 +1,6 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.feing;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import feign.Request;
 import feign.Response;
 import org.junit.jupiter.api.Test;
