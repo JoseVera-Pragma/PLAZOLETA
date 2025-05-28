@@ -1,7 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.InvalidNitException;
-import com.plazoleta.plazoleta_microservice.domain.exception.InvalidRestaurantNameException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidNitException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidRestaurantNameException;
 
 import java.util.Objects;
 

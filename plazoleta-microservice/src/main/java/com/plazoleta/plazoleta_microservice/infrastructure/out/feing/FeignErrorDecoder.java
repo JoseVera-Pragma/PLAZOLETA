@@ -1,6 +1,6 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.feing;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import org.springframework.stereotype.Component;

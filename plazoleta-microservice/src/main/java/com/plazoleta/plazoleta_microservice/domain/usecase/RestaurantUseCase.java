@@ -1,9 +1,9 @@
 package com.plazoleta.plazoleta_microservice.domain.usecase;
 
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
-import com.plazoleta.plazoleta_microservice.domain.exception.DuplicateNitException;
-import com.plazoleta.plazoleta_microservice.domain.exception.InvalidUserRoleException;
-import com.plazoleta.plazoleta_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.DuplicateNitException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidUserRoleException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.model.User;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
