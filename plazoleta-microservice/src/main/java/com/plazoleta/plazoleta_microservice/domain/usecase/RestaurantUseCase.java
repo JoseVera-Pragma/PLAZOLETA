@@ -22,7 +22,6 @@ public class RestaurantUseCase implements IRestaurantServicePort {
     @Override
     public void createRestaurant(Restaurant restaurant) {
         User owner = userSecurityPort.getUserById(restaurant.getIdOwner());
-        System.out.println(owner);
         if (owner == null) {
             throw new UserNotFoundException("User not found");
         }

@@ -55,28 +55,6 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed: " + errors, request.getRequestURI());
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        String message = "Malformed JSON or incorrect data format";
-
-        Throwable rootCause = ex.getCause();
-
-        if (rootCause instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException invalidFormatEx) {
-            Class<?> targetType = invalidFormatEx.getTargetType();
-
-            if (targetType.isEnum()) {
-                message = "Invalid value for field. Expected one of: " +
-                        Arrays.toString(targetType.getEnumConstants());
-            } else if (targetType.equals(LocalDate.class)) {
-                message = "Invalid date format. Expected format: yyyy-MM-dd";
-            }
-        } else if (rootCause instanceof java.time.format.DateTimeParseException) {
-            message = "Invalid date format. Expected format: yyyy-MM-dd";
-        }
-
-        return buildResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI());
-    }
-
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
         String message = "Data integrity violation";
@@ -86,17 +64,6 @@ public class ControllerAdvisor {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         String message = String.format("Invalid value '%s' for parameter '%s'", ex.getValue(), ex.getName());
-        return buildResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI());
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
-        String message = ex.getMessage();
-
-        if (message != null && message.contains("No enum constant")) {
-            message = "Invalid role. Please provide a valid role name.";
-        }
-
         return buildResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI());
     }
 
@@ -114,6 +81,5 @@ public class ControllerAdvisor {
         apiError.setPath(path);
         return new ResponseEntity<>(apiError, status);
     }
-
 
 }
