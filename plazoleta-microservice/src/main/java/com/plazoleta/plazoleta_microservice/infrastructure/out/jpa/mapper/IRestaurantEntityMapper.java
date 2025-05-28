@@ -9,7 +9,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring",
-        builder = @Builder(disableBuilder = false),
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         unmappedSourcePolicy = ReportingPolicy.IGNORE,
         uses = {IValueObjectMapper.class})
@@ -20,8 +19,18 @@ public interface IRestaurantEntityMapper {
     RestaurantEntity toRestaurantEntity(Restaurant restaurant);
 
 
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "nit", source = "nit")
-    @Mapping(target = "phoneNumber", source = "phoneNumber")
-    Restaurant toRestaurant(RestaurantEntity restaurantEntity);
+    default Restaurant toRestaurant(RestaurantEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new Restaurant.Builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .nit(entity.getNit())
+                .address(entity.getAddress())
+                .phoneNumber(entity.getPhoneNumber())
+                .urlLogo(entity.getUrlLogo())
+                .idOwner(entity.getIdOwner())
+                .build();
+    }
 }
