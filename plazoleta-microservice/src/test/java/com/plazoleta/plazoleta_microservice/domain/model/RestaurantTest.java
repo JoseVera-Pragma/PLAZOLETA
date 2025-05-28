@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.*;
+import com.plazoleta.plazoleta_microservice.domain.exception.DomainException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 

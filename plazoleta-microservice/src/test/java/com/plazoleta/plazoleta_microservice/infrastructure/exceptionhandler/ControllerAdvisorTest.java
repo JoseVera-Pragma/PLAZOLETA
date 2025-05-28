@@ -1,8 +1,9 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.exceptionhandler;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.DuplicateNitException;
-import com.plazoleta.plazoleta_microservice.domain.exception.InvalidNitException;
-import com.plazoleta.plazoleta_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.DomainException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.DuplicateNitException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidNitException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ class ControllerAdvisorTest {
     @Test
     void handleBadRequestDomainExceptions() {
         RuntimeException ex = new InvalidNitException("Invalid NIT");
-        ResponseEntity<ApiError> response = advisor.handleBadRequestDomainExceptions(ex, request);
+        ResponseEntity<ApiError> response = advisor.handleBadRequestDomainExceptions((DomainException) ex, request);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Invalid NIT", response.getBody().getMessage());
@@ -44,7 +45,7 @@ class ControllerAdvisorTest {
     @Test
     void handleUserNotFound() {
         UserNotFoundException ex = new UserNotFoundException("User not found");
-        ResponseEntity<ApiError> response = advisor.handleUserNotFound(ex, request);
+        ResponseEntity<ApiError> response = advisor.handleNotFoundDomainExceptions(ex, request);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals("User not found", response.getBody().getMessage());
@@ -53,7 +54,7 @@ class ControllerAdvisorTest {
     @Test
     void handleDuplicateNit() {
         DuplicateNitException ex = new DuplicateNitException("Duplicate NIT");
-        ResponseEntity<ApiError> response = advisor.handleDuplicateNit(ex, request);
+        ResponseEntity<ApiError> response = advisor.handleDuplicateDomainExceptions(ex, request);
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("Duplicate NIT", response.getBody().getMessage());

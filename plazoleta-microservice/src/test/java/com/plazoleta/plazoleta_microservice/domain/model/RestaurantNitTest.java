@@ -1,7 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.InvalidNitException;
-import com.plazoleta.plazoleta_microservice.domain.exception.MissingNitException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidNitException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.MissingNitException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
