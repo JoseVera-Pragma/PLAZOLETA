@@ -2,12 +2,14 @@ package com.plazoleta.plazoleta_microservice.application.handler.impl;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishData;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
 import com.plazoleta.plazoleta_microservice.application.mapper.IDishRequestMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.IDishResponseMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.ICategoryServicePort;
 import com.plazoleta.plazoleta_microservice.domain.api.IDishServicePort;
+import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 import lombok.RequiredArgsConstructor;
@@ -41,4 +43,25 @@ public class DishHandlerImpl implements IDishHandler {
 
         return dishResponseMapper.toDishResponse(dishServicePort.save(ownerId, dish));
     }
+
+    @Override
+    public void updateDish(Long ownerId, Long dishId, DishUpdateRequestDto dishUpdateRequestDto) {
+        Dish existingDish = dishServicePort.getById(dishId);
+        if (existingDish == null) {
+            throw new DishNotFoundException("Dish with ID " + dishId + " not found");
+        }
+
+        existingDish = Dish.builder()
+                .id(existingDish.getId())
+                .name(existingDish.getName())
+                .description(dishUpdateRequestDto.getDescription())
+                .price(dishUpdateRequestDto.getPrice())
+                .restaurantId(existingDish.getRestaurantId())
+                .imageUrl(existingDish.getImageUrl())
+                .category(existingDish.getCategory())
+                .build();
+
+        dishServicePort.update(ownerId, existingDish);
+    }
+
 }
