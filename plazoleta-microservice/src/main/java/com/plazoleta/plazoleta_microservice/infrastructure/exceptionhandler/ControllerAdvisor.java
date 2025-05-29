@@ -13,6 +13,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -45,6 +46,11 @@ public class ControllerAdvisor {
     @ExceptionHandler({UnauthorizedOwnerException.class})
     public ResponseEntity<ApiError> handleUnauthorizedDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex,HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST,"Missing parameter: " + ex.getParameterName(),request.getRequestURI());
     }
 
     @ExceptionHandler({UserNotFoundException.class, CategoryNotFoundException.class})
