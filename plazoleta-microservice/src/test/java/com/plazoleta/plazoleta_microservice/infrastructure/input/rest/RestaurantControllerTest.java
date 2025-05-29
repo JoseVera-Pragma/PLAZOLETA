@@ -2,6 +2,7 @@ package com.plazoleta.plazoleta_microservice.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.RestaurantRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
@@ -137,5 +138,27 @@ class RestaurantControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateDish_ReturnsNoContent_WhenSuccessful() throws Exception {
+        Long restaurantId = 1L;
+        Long dishId = 10L;
+        Long ownerId = 100L;
+
+        String jsonBody = """
+            {
+              "description": "Updated description",
+              "price": 15.5
+            }
+            """;
+
+        mockMvc.perform(put("/restaurants/{restaurantId}/dishes/{dishId}", restaurantId, dishId)
+                        .param("ownerId", ownerId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonBody))
+                .andExpect(status().isNoContent());
+
+        verify(dishHandler).updateDish(eq(ownerId), eq(dishId), any(DishUpdateRequestDto.class));
     }
 }
