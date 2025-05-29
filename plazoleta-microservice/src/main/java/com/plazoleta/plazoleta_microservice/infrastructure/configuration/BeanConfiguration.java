@@ -73,7 +73,7 @@ public class BeanConfiguration {
 
     @Bean
     public ICategoryPersistencePort categoryPersistencePort() {
-        return new CategoryJpaAdapter(categoryRepository, dishRepository,categoryEntityMapper);
+        return new CategoryJpaAdapter(categoryRepository, dishRepository, categoryEntityMapper);
     }
 
     @Bean
@@ -97,8 +97,8 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public IDishHandler dishHandler(IDishServicePort dishServicePort, ICategoryServicePort categoryServicePort){
-        return new DishHandlerImpl(dishServicePort, categoryServicePort,dishRequestMapper,dishResponseMapper);
+    public IDishHandler dishHandler(IDishServicePort dishServicePort, ICategoryServicePort categoryServicePort) {
+        return new DishHandlerImpl(dishServicePort, categoryServicePort, dishRequestMapper, dishResponseMapper);
     }
 
 }

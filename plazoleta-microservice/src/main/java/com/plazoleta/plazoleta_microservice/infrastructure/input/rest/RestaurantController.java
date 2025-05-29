@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.input.rest;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.RestaurantRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
@@ -25,11 +26,20 @@ public class RestaurantController {
     }
 
     @PostMapping("/{restaurantId}/dishes")
-    public ResponseEntity<DishResponseDto> createDish( @PathVariable Long restaurantId,
-                                            @RequestParam Long ownerId,
-                                            @Valid @RequestBody DishRequestDto dishRequestDto) {
-        DishResponseDto createdDish = dishHandler.createDish(restaurantId, ownerId,dishRequestDto);
+    public ResponseEntity<DishResponseDto> createDish(@PathVariable Long restaurantId,
+                                                      @RequestParam Long ownerId,
+                                                      @Valid @RequestBody DishRequestDto dishRequestDto) {
+        DishResponseDto createdDish = dishHandler.createDish(restaurantId, ownerId, dishRequestDto);
         return new ResponseEntity<>(createdDish, HttpStatus.CREATED);
 
+    }
+
+    @PutMapping("/{restaurantId}/dishes/{dishId}")
+    public ResponseEntity<Void> updateDish(@PathVariable Long restaurantId,
+                                           @PathVariable Long dishId,
+                                           @RequestParam Long ownerId,
+                                           @Valid @RequestBody DishUpdateRequestDto dishUpdateRequestDto) {
+        dishHandler.updateDish(ownerId, dishId, dishUpdateRequestDto);
+        return ResponseEntity.noContent().build();
     }
 }
