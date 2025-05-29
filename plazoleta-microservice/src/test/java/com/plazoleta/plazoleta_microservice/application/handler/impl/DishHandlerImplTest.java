@@ -2,11 +2,13 @@ package com.plazoleta.plazoleta_microservice.application.handler.impl;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishData;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
 import com.plazoleta.plazoleta_microservice.application.mapper.IDishRequestMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.IDishResponseMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.ICategoryServicePort;
 import com.plazoleta.plazoleta_microservice.domain.api.IDishServicePort;
+import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDataException;
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
@@ -257,4 +259,57 @@ class DishHandlerImplTest {
         inOrder.verify(dishServicePort).save(eq(ownerId), any(Dish.class));
         inOrder.verify(dishResponseMapper).toDishResponse(savedDish);
     }
+
+    @Test
+    void testUpdateDish_shouldUpdateDishSuccessfully() {
+        Long ownerId = 1L;
+        Long dishId = 10L;
+
+        DishUpdateRequestDto dto = new DishUpdateRequestDto();
+        dto.setDescription("Updated description");
+        dto.setPrice(15.0);
+
+        Dish existingDish = Dish.builder()
+                .id(dishId)
+                .name("Pasta")
+                .description("Old description")
+                .price(12.0)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main", "Main"))
+                .build();
+
+        when(dishServicePort.getById(dishId)).thenReturn(existingDish);
+
+        dishHandler.updateDish(ownerId, dishId, dto);
+
+        verify(dishServicePort).update(eq(ownerId), argThat(updated ->
+                updated.getId().equals(dishId) &&
+                        updated.getName().equals("Pasta") &&
+                        updated.getDescription().equals("Updated description") &&
+                        updated.getPrice() == 15.0 &&
+                        updated.getRestaurantId().equals(100L) &&
+                        updated.getImageUrl().equals("image.jpg") &&
+                        updated.getCategory().getName().equals("Main")
+        ));
+    }
+
+    @Test
+    void testUpdateDish_shouldThrowExceptionWhenDishNotFound() {
+        Long ownerId = 1L;
+        Long dishId = 99L;
+
+        DishUpdateRequestDto dto = new DishUpdateRequestDto();
+        dto.setDescription("New description");
+        dto.setPrice(20.0);
+
+        when(dishServicePort.getById(dishId)).thenReturn(null);
+
+        assertThrows(DishNotFoundException.class, () -> {
+            dishHandler.updateDish(ownerId, dishId, dto);
+        });
+
+        verify(dishServicePort, never()).update(any(), any());
+    }
+
 }
