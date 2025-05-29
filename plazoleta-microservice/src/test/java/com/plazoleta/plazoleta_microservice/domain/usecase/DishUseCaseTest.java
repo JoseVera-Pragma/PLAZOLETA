@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.usecase;
 
 import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
@@ -163,4 +164,187 @@ class DishUseCaseTest {
         verify(categoryPersistencePort).findByName("Postre");
         verify(dishPersistencePort).saveDish(any(Dish.class));
     }
+
+    @Test
+    void testGetById_shouldReturnDishIfExists() {
+        Long dishId = 1L;
+        Dish expectedDish = Dish.builder()
+                .id(dishId)
+                .name("Pasta")
+                .description("Delicious pasta")
+                .price(12.5)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main", "Main course"))
+                .build();
+
+        when(dishPersistencePort.getById(dishId)).thenReturn(expectedDish);
+
+        Dish result = dishUseCase.getById(dishId);
+
+
+        assertNotNull(result);
+        assertEquals(expectedDish, result);
+        verify(dishPersistencePort).getById(dishId);
+    }
+
+    @Test
+    void testGetById_shouldReturnNullIfDishDoesNotExist() {
+        Long dishId = 2L;
+        when(dishPersistencePort.getById(dishId)).thenReturn(null);
+
+        Dish result = dishUseCase.getById(dishId);
+
+        assertNull(result);
+        verify(dishPersistencePort).getById(dishId);
+    }
+
+
+    @Test
+    void testUpdateDish_shouldUpdateOnlyDescriptionAndPrice() {
+        Long ownerId = 10L;
+
+        Dish existingDish = Dish.builder()
+                .id(1L)
+                .name("Pasta")
+                .description("Old description")
+                .price(10.0)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main","test"))
+                .build();
+
+        Dish updatedInput = Dish.builder()
+                .id(1L)
+                .name("Pasta")
+                .description("New delicious pasta")
+                .price(12.5)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main","test"))
+                .build();
+
+        Restaurant restaurant = new Restaurant.Builder()
+                .id(100L)
+                .name("My Restaurant")
+                .nit("123456789")
+                .address("123 Main St")
+                .phoneNumber("5551234")
+                .urlLogo("http://logo.url")
+                .idOwner(10L)
+                .build();
+
+        when(dishPersistencePort.getById(1L)).thenReturn(existingDish);
+        when(restaurantPersistencePort.getById(100L)).thenReturn(restaurant);
+
+        dishUseCase.update(ownerId, updatedInput);
+
+        verify(dishPersistencePort).updateDish(
+                argThat(updated ->
+                        updated.getId().equals(1L) &&
+                                updated.getName().equals("Pasta") &&
+                                updated.getDescription().equals("New delicious pasta") &&
+                                updated.getPrice() == 12.5 &&
+                                updated.getRestaurantId().equals(100L) &&
+                                updated.getImageUrl().equals("image.jpg") &&
+                                updated.getCategory().getName().equals("Main"))
+        );
+    }
+
+    @Test
+    void testUpdateDish_shouldThrowExceptionIfNotFound() {
+        Long ownerId = 10L;
+
+        Dish updatedInput = Dish.builder()
+                .id(99L)
+                .name("Pasta")
+                .description("Old description")
+                .price(10.0)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main","test"))
+                .build();
+
+        when(dishPersistencePort.getById(99L)).thenReturn(null);
+
+        assertThrows(DishNotFoundException.class, () -> {
+            dishUseCase.update(ownerId, updatedInput);
+        });
+    }
+
+    @Test
+    void testUpdate_shouldThrowExceptionIfRestaurantNotFound() {
+        Long ownerId = 10L;
+
+        Dish updatedInput = Dish.builder()
+                .id(1L)
+                .name("Pasta")
+                .description("New description")
+                .price(12.0)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main","test"))
+                .build();
+
+        Dish existingDish = Dish.builder()
+                .id(1L)
+                .name("Pasta")
+                .description("Old description")
+                .price(10.0)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main","test"))
+                .build();
+
+        when(dishPersistencePort.getById(1L)).thenReturn(existingDish);
+        when(restaurantPersistencePort.getById(100L)).thenReturn(null);
+
+        assertThrows(RestaurantNotFoundException.class, () -> {
+            dishUseCase.update(ownerId, updatedInput);
+        });
+    }
+
+    @Test
+    void testUpdate_shouldThrowExceptionIfOwnerNotAuthorized() {
+        Long ownerId = 10L;
+        Long otherOwnerId = 20L;
+
+        Dish updatedInput = Dish.builder()
+                .id(1L)
+                .name("Pasta")
+                .description("New description")
+                .price(12.0)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main","test"))
+                .build();
+
+        Dish existingDish = Dish.builder()
+                .id(1L)
+                .name("Pasta")
+                .description("Old description")
+                .price(10.0)
+                .restaurantId(100L)
+                .imageUrl("image.jpg")
+                .category(new Category(1L, "Main","test"))
+                .build();
+
+        Restaurant restaurant = new Restaurant.Builder()
+                .id(100L)
+                .name("My Restaurant")
+                .nit("123456789")
+                .address("123 Main St")
+                .phoneNumber("5551234")
+                .urlLogo("http://logo.url")
+                .idOwner(otherOwnerId)
+                .build();
+
+        when(dishPersistencePort.getById(1L)).thenReturn(existingDish);
+        when(restaurantPersistencePort.getById(100L)).thenReturn(restaurant);
+
+        assertThrows(UnauthorizedOwnerException.class, () -> {
+            dishUseCase.update(ownerId, updatedInput);
+        });
+    }
+
 }
