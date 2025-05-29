@@ -1,19 +1,24 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.exceptionhandler;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.*;
+import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryAlreadyExistsException;
+import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryInUseException;
+import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.category.InvalidCategoryDataException;
+import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDataException;
+import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,19 +35,31 @@ public class ControllerAdvisor {
             InvalidRestaurantNitException.class,
             InvalidUserRoleException.class,
             MissingNitException.class,
-            MissingPhoneNumberException.class
+            MissingPhoneNumberException.class,
+            InvalidCategoryDataException.class,
+            InvalidDishDataException.class
     })
     public ResponseEntity<ApiError> handleBadRequestDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ApiError> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler({UnauthorizedOwnerException.class})
+    public ResponseEntity<ApiError> handleUnauthorizedDomainExceptions(RuntimeException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex,HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST,"Missing parameter: " + ex.getParameterName(),request.getRequestURI());
+    }
+
+    @ExceptionHandler({UserNotFoundException.class, CategoryNotFoundException.class})
+    public ResponseEntity<ApiError> handleNotFoundDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
     }
 
-    @ExceptionHandler(DuplicateNitException.class)
-    public ResponseEntity<ApiError> handleDuplicateNit(DuplicateNitException ex, HttpServletRequest request) {
+    @ExceptionHandler({DuplicateNitException.class, CategoryAlreadyExistsException.class, CategoryInUseException.class, DataAccessException.class})
+    public ResponseEntity<ApiError> handleDuplicateDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 

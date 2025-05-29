@@ -3,7 +3,6 @@ plugins {
 	id 'jacoco'
 	id 'org.springframework.boot' version '3.4.6'
 	id 'org.springdoc.openapi-gradle-plugin' version '1.9.0'
-	id 'org.sonarqube' version '4.2.1.3168'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -56,31 +55,23 @@ dependencyManagement {
 	}
 }
 
-sonar {
-	properties {
-		property 'sonar.login', '80fdf013db84a192c45219cdfd8bef9c772f5465'
-		property "sonar.projectKey", "robcruzd-pragma1_plazoleta"
-		property "sonar.organization", "robcruzd-pragma1"
-		property "sonar.host.url", "https://sonarcloud.io"
-		property "sonar.jacoco.reportPaths", "plazoleta/build/jacoco/test.exec"
-		property "sonar.junit.reportsPath", "plazoleta/build/test-results/*/TEST-*.xml"
-	}
-}
-
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy jacocoTestReport
 }
 
 def coverageExcludes = [
-		'**/dto/.*',
-		'**/spi/.*',
-		'**/api/.*',
-		'**/mappers/.*',
-		'**/mapper/.*',
-		'**/repository/.*',
-		'**/*.test',
-		'**/generated/.*',
+		'**/dto/**',
+		'**/spi/**',
+		'**/api/**',
+		'**/mappers/**',
+		'**/mapper/**',
+		'**/repository/**',
+		'**/*Test*',
+		'**/generated/**',
+		'**/config/**',
+		'**/*Config*',
+		'**/*Application*'
 ]
 
 jacocoTestReport {

@@ -1,15 +1,17 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.feing;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import feign.Request;
 import feign.Response;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(properties = "spring.profiles.active=test")
 class FeignErrorDecoderTest {
 
     private final FeignErrorDecoder decoder = new FeignErrorDecoder();

@@ -1,7 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
-import com.plazoleta.plazoleta_microservice.domain.exception.InvalidPhoneNumberException;
-import com.plazoleta.plazoleta_microservice.domain.exception.MissingPhoneNumberException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidPhoneNumberException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.MissingPhoneNumberException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 

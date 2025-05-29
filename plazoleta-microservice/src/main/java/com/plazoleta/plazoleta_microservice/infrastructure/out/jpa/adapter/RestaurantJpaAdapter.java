@@ -2,6 +2,7 @@ package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
+import com.plazoleta.plazoleta_microservice.infrastructure.exception.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IRestaurantEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IRestaurantRepository;
@@ -24,5 +25,12 @@ public class RestaurantJpaAdapter implements IRestaurantPersistencePort {
     @Override
     public boolean existsByNit(String nit){
         return restaurantRepository.existsByNit(nit);
+    }
+
+    @Override
+    public Restaurant getById(Long id) {
+        return restaurantEntityMapper.toRestaurant(restaurantRepository.findById(id).orElseThrow(()->
+                new RestaurantNotFoundException("Restaurant with ID " + id + " not found")
+        ));
     }
 }

@@ -5,9 +5,11 @@ import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(properties = "spring.profiles.active=test")
 class IRestaurantRequestMapperTest {
     private IRestaurantRequestMapper mapper;
 
