@@ -31,15 +31,14 @@ public class CategoryUseCase implements ICategoryServicePort {
         categoryPersistencePort.findById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
 
         Optional<Category> oldCategory = categoryPersistencePort.findByName(updatedCategory.getName());
-        if (oldCategory.isPresent()) {
-            if (!oldCategory.get().getId().equals(id)) {
-                throw new CategoryAlreadyExistsException("Category whit name " + oldCategory.get().getName() + " already exists");
-            }
+        if (oldCategory.isPresent() && !oldCategory.get().getId().equals(id)) {
+            throw new CategoryAlreadyExistsException("Category whit name " + oldCategory.get().getName() + " already exists");
         }
+
 
         Category newCategory = new Category(id, updatedCategory.getName(), updatedCategory.getDescription());
 
-            return categoryPersistencePort.save(newCategory);
+        return categoryPersistencePort.save(newCategory);
     }
 
     @Override
@@ -60,7 +59,7 @@ public class CategoryUseCase implements ICategoryServicePort {
     @Override
     public void deleteCategoryById(Long id) {
         categoryPersistencePort.findById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
-        if (categoryPersistencePort.existsDishWithCategoryId(id)){
+        if (categoryPersistencePort.existsDishWithCategoryId(id)) {
             throw new CategoryInUseException("Category with ID " + id + " is currently in use by one or more dishes");
         }
         categoryPersistencePort.delete(id);
