@@ -1,3 +1,7 @@
+jwt:
+  secret: REMOVED_JWT_SECRET
+  expiration: 3600000
+
 server:
   port: 8081
   servlet:
@@ -16,6 +20,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+  security:
+    user:
+      name: ""
+      password: ""
 
 appdescription: API para gestionar usuarios
 appversion: 1.0.0
