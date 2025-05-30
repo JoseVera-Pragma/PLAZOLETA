@@ -13,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserUseCaseTest {
@@ -35,7 +37,7 @@ class UserUseCaseTest {
             .phoneNumber(new PhoneNumber("+573111551451"))
             .email(new Email("admin@test.com"))
             .password("password")
-            .role(new Role(1L, RoleList.ROLE_ADMIN,"Administrador"))
+            .role(new Role(1L, RoleList.ROLE_ADMIN, "Administrador"))
             .build();
 
     private final User sampleOwnerUser = User.builder()
@@ -47,7 +49,7 @@ class UserUseCaseTest {
             .dateOfBirth(LocalDate.of(2007, 1, 2))
             .email(new Email("owner@test.com"))
             .password("password")
-            .role(new Role(2L, RoleList.ROLE_OWNER,"Propietario"))
+            .role(new Role(2L, RoleList.ROLE_OWNER, "Propietario"))
             .build();
 
 
@@ -101,7 +103,7 @@ class UserUseCaseTest {
                 .dateOfBirth(LocalDate.of(2007, 3, 2))
                 .email(new Email("owneras@test.com"))
                 .password("password")
-                .role(new Role(2L, RoleList.ROLE_OWNER,"Propietario"))
+                .role(new Role(2L, RoleList.ROLE_OWNER, "Propietario"))
                 .build();
 
         userUseCase.updateUser(updatedUser, sampleAdminUser.getRole());
@@ -111,17 +113,17 @@ class UserUseCaseTest {
     }
 
     @Test
-    void ShouldDeleteUserSuccessful(){
-        when(persistencePort.getUser(1L)).thenReturn(sampleAdminUser);
-        userUseCase.deleteUser(1L);
+    void ShouldDeleteUserSuccessful() {
+        when(persistencePort.getUser(1L)).thenReturn(sampleOwnerUser);
+        userUseCase.deleteUser(1L, new Role(1L, RoleList.ROLE_ADMIN, "Administrador"));
 
         verify(persistencePort).deleteUser(1L);
     }
 
     @Test
-    void shouldThrowWhenDeletingNonExistingUser(){
+    void shouldThrowWhenDeletingNonExistingUser() {
         when(persistencePort.getUser(1L)).thenReturn(null);
 
-        assertThrows(UserNotFoundException.class,()->userUseCase.deleteUser(1L));
+        assertThrows(UserNotFoundException.class, () -> userUseCase.deleteUser(1L, new Role(1L, RoleList.ROLE_ADMIN, "Administrador")));
     }
 }
