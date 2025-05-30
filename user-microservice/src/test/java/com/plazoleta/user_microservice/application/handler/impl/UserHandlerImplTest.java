@@ -2,12 +2,14 @@ package com.plazoleta.user_microservice.application.handler.impl;
 
 import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
+import com.plazoleta.user_microservice.application.handler.IAuthenticatedUserHandler;
 import com.plazoleta.user_microservice.application.mapper.IUserRequestMapper;
 import com.plazoleta.user_microservice.application.mapper.IUserResponseMapper;
 import com.plazoleta.user_microservice.domain.api.IRoleServicePort;
 import com.plazoleta.user_microservice.domain.api.IUserServicePort;
 import com.plazoleta.user_microservice.domain.model.*;
 
+import com.plazoleta.user_microservice.domain.spi.IPasswordEncoderPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserHandlerImplTest {
@@ -38,7 +39,10 @@ class UserHandlerImplTest {
     private IUserResponseMapper userResponseMapper;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private IPasswordEncoderPort passwordEncoder;
+
+    @Mock
+    private IAuthenticatedUserHandler authenticatedUserHandler;
 
     @InjectMocks
     private UserHandlerImpl userHandler;
@@ -75,6 +79,7 @@ class UserHandlerImplTest {
 
     @Test
     void testCreateUser_WhenAdminCreates_ShouldAssignOwnerRole() {
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_ADMIN".describeConstable());
         when(userRequestMapper.toUser(requestDto)).thenReturn(user);
         when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(adminRole);
         when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(ownerRole);
@@ -88,6 +93,7 @@ class UserHandlerImplTest {
 
     @Test
     void testCreateUser_WhenOtherRolesCreates_ShouldThrowsException() {
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_ADMIN".describeConstable());
         when(userRequestMapper.toUser(requestDto)).thenReturn(user);
         when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(ownerRole);
 
@@ -136,6 +142,7 @@ class UserHandlerImplTest {
 
     @Test
     void testUpdateUser_WhenOtherRolesUpdater_ShouldThrowsException() {
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_ADMIN".describeConstable());
         Long userId = 10L;
 
         when(userServicePort.getUser(userId)).thenReturn(user);
@@ -147,6 +154,7 @@ class UserHandlerImplTest {
 
     @Test
     void testUpdateUser_ShouldUpdateCorrectly() {
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_ADMIN".describeConstable());
         Long userId = 10L;
 
         when(userServicePort.getUser(userId)).thenReturn(user);
@@ -163,12 +171,15 @@ class UserHandlerImplTest {
 
     @Test
     void testDeleteUser_ShouldCallDelete() {
-        Long userId = 15L;
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_ADMIN".describeConstable());
+        Long userId = 2L;
+        when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(adminRole);
 
         when(userServicePort.getUser(userId)).thenReturn(user);
+
         userHandler.deleteUser(userId);
 
-        verify(userServicePort).deleteUser(userId);
+        verify(userServicePort).deleteUser(userId,adminRole);
     }
 
 }
