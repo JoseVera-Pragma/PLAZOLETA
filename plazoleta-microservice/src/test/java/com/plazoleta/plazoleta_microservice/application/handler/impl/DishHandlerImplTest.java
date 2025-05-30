@@ -42,6 +42,9 @@ class DishHandlerImplTest {
     @InjectMocks
     private DishHandlerImpl dishHandler;
 
+    @Mock
+    private AuthenticatedUserHandlerImpl authenticatedUserHandler;
+
     private DishRequestDto dishRequestDto;
     private DishData dishData;
     private Category category;
@@ -108,11 +111,12 @@ class DishHandlerImplTest {
     @Test
     void createDish_ShouldReturnDishResponseDto_WhenValidData() {
         when(dishRequestMapper.toDishData(dishRequestDto)).thenReturn(dishData);
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(ownerId);
         when(categoryServicePort.getCategoryByName("Pizza")).thenReturn(category);
         when(dishServicePort.save(eq(ownerId), any(Dish.class))).thenReturn(savedDish);
         OngoingStubbing<DishResponseDto> dishResponseDtoOngoingStubbing = when(dishResponseMapper.toDishResponse(savedDish)).thenReturn(dishResponseDto);
 
-        DishResponseDto result = dishHandler.createDish(restaurantId, ownerId, dishRequestDto);
+        DishResponseDto result = dishHandler.createDish(restaurantId, dishRequestDto);
 
         assertNotNull(result);
         assertEquals(dishResponseDto.getId(), result.getId());
@@ -133,11 +137,12 @@ class DishHandlerImplTest {
     @Test
     void createDish_ShouldBuildDishWithCorrectProperties_WhenCalled() {
         when(dishRequestMapper.toDishData(dishRequestDto)).thenReturn(dishData);
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(ownerId);
         when(categoryServicePort.getCategoryByName("Pizza")).thenReturn(category);
         when(dishServicePort.save(eq(ownerId), any(Dish.class))).thenReturn(savedDish);
         when(dishResponseMapper.toDishResponse(savedDish)).thenReturn(dishResponseDto);
 
-        dishHandler.createDish(restaurantId, ownerId, dishRequestDto);
+        dishHandler.createDish(restaurantId, dishRequestDto);
 
         verify(dishServicePort).save(eq(ownerId), argThat(dish ->
                 dish.getName().equals("Pizza Margherita") &&
@@ -159,11 +164,12 @@ class DishHandlerImplTest {
                 .categoryName("Pizza")
                 .build();
 
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(ownerId);
         when(dishRequestMapper.toDishData(dishRequestDto)).thenReturn(dishDataWithNulls);
         when(categoryServicePort.getCategoryByName("Pizza")).thenReturn(category);
 
         assertThrows(InvalidDishDataException.class, () -> {
-            dishHandler.createDish(restaurantId, ownerId, dishRequestDto);
+            dishHandler.createDish(restaurantId, dishRequestDto);
         });
     }
 
@@ -175,7 +181,7 @@ class DishHandlerImplTest {
                 .thenThrow(new RuntimeException("Category not found"));
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                dishHandler.createDish(restaurantId, ownerId, dishRequestDto)
+                dishHandler.createDish(restaurantId, dishRequestDto)
         );
 
         assertEquals("Category not found", exception.getMessage());
@@ -189,12 +195,13 @@ class DishHandlerImplTest {
     void createDish_ShouldPropagateException_WhenDishServiceFails() {
 
         when(dishRequestMapper.toDishData(dishRequestDto)).thenReturn(dishData);
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(ownerId);
         when(categoryServicePort.getCategoryByName("Pizza")).thenReturn(category);
         when(dishServicePort.save(eq(ownerId), any(Dish.class)))
                 .thenThrow(new RuntimeException("Failed to save dish"));
 
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                dishHandler.createDish(restaurantId, ownerId, dishRequestDto)
+                dishHandler.createDish(restaurantId, dishRequestDto)
         );
 
         assertEquals("Failed to save dish", exception.getMessage());
@@ -217,9 +224,10 @@ class DishHandlerImplTest {
 
         when(dishRequestMapper.toDishData(dishRequestDto)).thenReturn(dishDataWithZeroPrice);
         when(categoryServicePort.getCategoryByName("Pizza")).thenReturn(category);
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(ownerId);
 
         InvalidDishDataException thrown = assertThrows(InvalidDishDataException.class, () -> {
-            dishHandler.createDish(restaurantId, ownerId, dishRequestDto);
+            dishHandler.createDish(restaurantId, dishRequestDto);
         });
 
         assertEquals("The price of the dish must be a positive integer greater than 0.", thrown.getMessage());
@@ -231,12 +239,13 @@ class DishHandlerImplTest {
         Long specificRestaurantId = 999L;
         Long specificOwnerId = 888L;
 
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(specificOwnerId);
         when(dishRequestMapper.toDishData(dishRequestDto)).thenReturn(dishData);
         when(categoryServicePort.getCategoryByName("Pizza")).thenReturn(category);
         when(dishServicePort.save(eq(specificOwnerId), any(Dish.class))).thenReturn(savedDish);
         when(dishResponseMapper.toDishResponse(savedDish)).thenReturn(dishResponseDto);
 
-        dishHandler.createDish(specificRestaurantId, specificOwnerId, dishRequestDto);
+        dishHandler.createDish(specificRestaurantId, dishRequestDto);
 
         verify(dishServicePort).save(eq(specificOwnerId), argThat(dish ->
                 dish.getRestaurantId().equals(specificRestaurantId)
@@ -247,11 +256,12 @@ class DishHandlerImplTest {
     void createDish_ShouldCallDependenciesInCorrectOrder_WhenCalled() {
 
         when(dishRequestMapper.toDishData(dishRequestDto)).thenReturn(dishData);
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(ownerId);
         when(categoryServicePort.getCategoryByName("Pizza")).thenReturn(category);
         when(dishServicePort.save(eq(ownerId), any(Dish.class))).thenReturn(savedDish);
         when(dishResponseMapper.toDishResponse(savedDish)).thenReturn(dishResponseDto);
 
-        dishHandler.createDish(restaurantId, ownerId, dishRequestDto);
+        dishHandler.createDish(restaurantId, dishRequestDto);
 
         var inOrder = inOrder(dishRequestMapper, categoryServicePort, dishServicePort, dishResponseMapper);
         inOrder.verify(dishRequestMapper).toDishData(dishRequestDto);
@@ -280,8 +290,9 @@ class DishHandlerImplTest {
                 .build();
 
         when(dishServicePort.getById(dishId)).thenReturn(existingDish);
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(ownerId);
 
-        dishHandler.updateDish(ownerId, dishId, dto);
+        dishHandler.updateDish(dishId, dto);
 
         verify(dishServicePort).update(eq(ownerId), argThat(updated ->
                 updated.getId().equals(dishId) &&
@@ -306,7 +317,7 @@ class DishHandlerImplTest {
         when(dishServicePort.getById(dishId)).thenReturn(null);
 
         assertThrows(DishNotFoundException.class, () -> {
-            dishHandler.updateDish(ownerId, dishId, dto);
+            dishHandler.updateDish(dishId, dto);
         });
 
         verify(dishServicePort, never()).update(any(), any());
