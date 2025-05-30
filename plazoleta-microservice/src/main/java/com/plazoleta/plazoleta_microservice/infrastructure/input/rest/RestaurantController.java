@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,27 +20,28 @@ public class RestaurantController {
     private final IRestaurantHandler restaurantHandler;
     private final IDishHandler dishHandler;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Void> createRestaurant(@Valid @RequestBody RestaurantRequestDto restaurantRequestDto) {
         restaurantHandler.createRestaurant(restaurantRequestDto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping("/{restaurantId}/dishes")
     public ResponseEntity<DishResponseDto> createDish(@PathVariable Long restaurantId,
-                                                      @RequestParam Long ownerId,
                                                       @Valid @RequestBody DishRequestDto dishRequestDto) {
-        DishResponseDto createdDish = dishHandler.createDish(restaurantId, ownerId, dishRequestDto);
+        DishResponseDto createdDish = dishHandler.createDish(restaurantId, dishRequestDto);
         return new ResponseEntity<>(createdDish, HttpStatus.CREATED);
 
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @PutMapping("/{restaurantId}/dishes/{dishId}")
     public ResponseEntity<Void> updateDish(@PathVariable Long restaurantId,
                                            @PathVariable Long dishId,
-                                           @RequestParam Long ownerId,
                                            @Valid @RequestBody DishUpdateRequestDto dishUpdateRequestDto) {
-        dishHandler.updateDish(ownerId, dishId, dishUpdateRequestDto);
+        dishHandler.updateDish(dishId, dishUpdateRequestDto);
         return ResponseEntity.noContent().build();
     }
 }
