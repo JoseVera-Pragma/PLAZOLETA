@@ -3,6 +3,7 @@ package com.plazoleta.plazoleta_microservice.infrastructure.configuration;
 import com.plazoleta.plazoleta_microservice.application.handler.ICategoryHandler;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
 import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandler;
+import com.plazoleta.plazoleta_microservice.application.handler.impl.AuthenticatedUserHandlerImpl;
 import com.plazoleta.plazoleta_microservice.application.handler.impl.CategoryHandlerImpl;
 import com.plazoleta.plazoleta_microservice.application.handler.impl.DishHandlerImpl;
 import com.plazoleta.plazoleta_microservice.application.handler.impl.RestaurantHandlerImpl;
@@ -49,6 +50,7 @@ public class BeanConfiguration {
     private final IDishResponseMapper dishResponseMapper;
     private final ICategoryRequestMapper categoryRequestMapper;
     private final ICategoryResponseMapper categoryResponseMapper;
+    private final AuthenticatedUserHandlerImpl authenticatedUserHandler;
 
     @Bean
     public IRestaurantPersistencePort restaurantPersistencePort() {
@@ -98,7 +100,7 @@ public class BeanConfiguration {
 
     @Bean
     public IDishHandler dishHandler(IDishServicePort dishServicePort, ICategoryServicePort categoryServicePort) {
-        return new DishHandlerImpl(dishServicePort, categoryServicePort, dishRequestMapper, dishResponseMapper);
+        return new DishHandlerImpl(dishServicePort, categoryServicePort, dishRequestMapper, dishResponseMapper, authenticatedUserHandler);
     }
 
 }
