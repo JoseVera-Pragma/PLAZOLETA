@@ -2,6 +2,7 @@ package com.plazoleta.user_microservice.infrastructure.out.jpa.repository;
 
 import com.plazoleta.user_microservice.domain.model.RoleList;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.entity.RoleEntity;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -20,6 +21,11 @@ class IRoleRepositoryTest {
 
     @Autowired
     private IRoleRepository roleRepository;
+
+    @BeforeEach
+    void cleanDatabase() {
+        roleRepository.deleteAll();
+    }
 
     @Test
     void shouldFindRoleByName() {
