@@ -21,7 +21,7 @@ public class Email {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Email email = (Email) o;
-        return value.equals(email.value);
+        return value.equalsIgnoreCase(email.value);
     }
 
     @Override
