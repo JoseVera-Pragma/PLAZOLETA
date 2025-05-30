@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,6 +42,7 @@ class RestaurantControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void createRestaurant_ShouldReturnCreated() throws Exception {
         RestaurantRequestDto requestDto = new RestaurantRequestDto();
         requestDto.setName("La Delicia");
@@ -59,6 +61,7 @@ class RestaurantControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"OWNER"})
     void createDish_ShouldReturnCreatedDish() throws Exception {
         Long restaurantId = 1L;
         Long ownerId = 1L;
@@ -80,7 +83,7 @@ class RestaurantControllerTest {
         responseDto.setRestaurantId(restaurantId);
         responseDto.setCategoryName("test");
 
-        when(dishHandler.createDish(anyLong(), anyLong(), any(DishRequestDto.class)))
+        when(dishHandler.createDish(anyLong(), any(DishRequestDto.class)))
                 .thenReturn(responseDto);
 
         mockMvc.perform(post("/restaurants/{restaurantId}/dishes", restaurantId)
@@ -97,10 +100,11 @@ class RestaurantControllerTest {
                 .andExpect(jsonPath("$.restaurantId").value(1))
                 .andExpect(jsonPath("$.categoryName").value("test"));
 
-        verify(dishHandler, times(1)).createDish(eq(restaurantId), eq(ownerId), any(DishRequestDto.class));
+        verify(dishHandler, times(1)).createDish(eq(restaurantId), any(DishRequestDto.class));
     }
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void createRestaurant_WithInvalidData_ShouldReturnBadRequest() throws Exception {
         RestaurantRequestDto invalidRequest = new RestaurantRequestDto();
 
@@ -111,6 +115,7 @@ class RestaurantControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void createDish_WithInvalidData_ShouldReturnBadRequest() throws Exception {
         Long restaurantId = 1L;
         Long ownerId = 1L;
@@ -125,6 +130,7 @@ class RestaurantControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void createDish_WithoutOwnerIdParam_ShouldReturnBadRequest() throws Exception {
         Long restaurantId = 1L;
 
@@ -141,6 +147,7 @@ class RestaurantControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"OWNER"})
     void updateDish_ReturnsNoContent_WhenSuccessful() throws Exception {
         Long restaurantId = 1L;
         Long dishId = 10L;
@@ -159,6 +166,6 @@ class RestaurantControllerTest {
                         .content(jsonBody))
                 .andExpect(status().isNoContent());
 
-        verify(dishHandler).updateDish(eq(ownerId), eq(dishId), any(DishUpdateRequestDto.class));
+        verify(dishHandler).updateDish(eq(dishId), any(DishUpdateRequestDto.class));
     }
 }
