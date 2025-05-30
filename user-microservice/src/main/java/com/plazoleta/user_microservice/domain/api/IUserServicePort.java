@@ -18,5 +18,5 @@ public interface IUserServicePort {
 
     void updateUser(User user, Role creatorRole);
 
-    void deleteUser(Long id);
+    void deleteUser(Long id, Role roleEliminator);
 }
