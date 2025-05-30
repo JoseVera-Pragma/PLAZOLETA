@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,6 +41,7 @@ class CategoryControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void createCategory_ShouldReturnCreatedCategory() throws Exception {
         CategoryRequestDto requestDto = new CategoryRequestDto();
         requestDto.setName("Electronics");
@@ -65,6 +67,7 @@ class CategoryControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void getAllCategories_ShouldReturnListOfCategories() throws Exception {
         CategoryResponseDto category1 = new CategoryResponseDto();
         category1.setId(1L);
@@ -92,6 +95,7 @@ class CategoryControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void deleteCategoryById_ShouldReturnNoContent() throws Exception {
         Long categoryId = 1L;
         doNothing().when(categoryHandler).deleteCategoryById(categoryId);
@@ -103,6 +107,7 @@ class CategoryControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"ADMIN"})
     void createCategory_WithInvalidData_ShouldReturnBadRequest() throws Exception {
         CategoryRequestDto invalidRequest = new CategoryRequestDto();
 
