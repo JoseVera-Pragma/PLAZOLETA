@@ -8,9 +8,14 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDate;
@@ -44,7 +49,7 @@ public class ControllerAdvisor {
 
     @ExceptionHandler(RoleAssignedException.class)
     public ResponseEntity<ApiError> handleRoleAssigned(RoleAssignedException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.CONFLICT, ExceptionResponse.ROLE_ASSIGNED_EXCEPTION.getMessage(), request.getRequestURI());
+        return buildResponse(HttpStatus.CONFLICT, "Cannot delete: Role is assigned to one or more users.", request.getRequestURI());
     }
 
     @ExceptionHandler(UnderAgeOwnerException.class)
@@ -119,6 +124,31 @@ public class ControllerAdvisor {
         }
 
         return buildResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI());
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ApiError> handleUsernameNotFound(UsernameNotFoundException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(HttpClientErrorException.Unauthorized.class)
+    public ResponseEntity<ApiError> handleUnauthorized(HttpClientErrorException.Unauthorized ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
