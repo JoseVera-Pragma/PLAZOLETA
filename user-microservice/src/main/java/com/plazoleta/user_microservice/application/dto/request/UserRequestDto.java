@@ -1,13 +1,15 @@
 package com.plazoleta.user_microservice.application.dto.request;
 
 import jakarta.validation.constraints.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserRequestDto {
 
     @NotBlank(message = "First name is required")

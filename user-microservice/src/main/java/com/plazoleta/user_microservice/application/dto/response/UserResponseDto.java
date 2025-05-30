@@ -1,12 +1,14 @@
 package com.plazoleta.user_microservice.application.dto.response;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserResponseDto {
     private String firstName;
     private String lastName;
