@@ -33,9 +33,12 @@ public class UserValidator {
         validateOwnerAge(user);
     }
 
-    public void validateUserDelete(Long userId, Role deleterRole) {
-        validateUserExists(userId);
-        validateRoleDeletePermissions(userId, deleterRole);
+    public void validateUserDelete(User user, Role deleterRole) {
+        if (user == null){
+            throw new UserNotFoundException("User not found");
+        }
+        validateUserExists(user.getId());
+        validateRoleDeletionPermissions(user.getRole(), deleterRole);
     }
 
     private void validateUniqueEmail(Email email) {
@@ -58,17 +61,16 @@ public class UserValidator {
     }
 
     private void validateRoleCreationPermissions(Role newUserRole, Role creatorRole) {
-        if (creatorRole.isAdmin() && !newUserRole.isOwner()) {
-            throw new RoleNotAllowedException("Admin can only create Owner");
+        if (newUserRole.isOwner() && !creatorRole.isAdmin()) {
+            throw new RoleNotAllowedException("Only ADMIN can create an OWNER.");
         }
-        if (creatorRole.isOwner() && !newUserRole.isEmployed()) {
-            throw new RoleNotAllowedException("Owner can only create Employed");
+
+        if (newUserRole.isEmployed() && !creatorRole.isOwner()) {
+            throw new RoleNotAllowedException("Only OWNER can create an EMPLOYED.");
         }
-        if (creatorRole.isEmployed()) {
-            throw new RoleNotAllowedException("Employed cannot update roles");
-        }
-        if (creatorRole.isCustomer()) {
-            throw new RoleNotAllowedException("Customers cannot create other users");
+
+        if (newUserRole.isAdmin() && !creatorRole.isAdmin()) {
+            throw new RoleNotAllowedException("Creation of ADMIN users is not allowed.");
         }
     }
 
@@ -86,34 +88,30 @@ public class UserValidator {
     }
 
     private void validateRoleUpdatePermissions(Role newRole, Role updaterRole) {
-        if (updaterRole.isAdmin() && !newRole.isOwner()) {
-            throw new RoleNotAllowedException("Admin can only assign Owner role");
+        if (newRole.isOwner() && !updaterRole.isAdmin()) {
+            throw new RoleNotAllowedException("Only ADMIN can assign the OWNER role.");
         }
-        if (updaterRole.isOwner() && !newRole.isEmployed()) {
-            throw new RoleNotAllowedException("Owner can only assign Employed role");
+
+        if (newRole.isEmployed() && !updaterRole.isOwner()) {
+            throw new RoleNotAllowedException("Only OWNER can assign the EMPLOYED role.");
         }
-        if (updaterRole.isEmployed()) {
-            throw new RoleNotAllowedException("Employed cannot update roles");
-        }
-        if (updaterRole.isCustomer()) {
-            throw new RoleNotAllowedException("Customers cannot update roles");
+
+        if (newRole.isAdmin() && !updaterRole.isAdmin()) {
+            throw new RoleNotAllowedException("Only ADMIN can assign the ADMIN role.");
         }
     }
 
-    private void validateRoleDeletePermissions(Long id, Role deleterRole) {
-        User user = userPersistencePort.getUser(id);
-        Role userRole = user.getRole();
-        if (deleterRole.isAdmin() && !userRole.isOwner()) {
-            throw new RoleNotAllowedException("Admin can only delete users with Owner role");
+    private void validateRoleDeletionPermissions(Role targetRole, Role requesterRole) {
+        if (targetRole.isAdmin()) {
+            throw new RoleNotAllowedException("ADMIN users cannot be deleted.");
         }
-        if (deleterRole.isOwner() && !userRole.isEmployed()) {
-            throw new RoleNotAllowedException("Owner can only delete users with Employed role");
+
+        if (targetRole.isOwner() && !requesterRole.isAdmin()) {
+            throw new RoleNotAllowedException("Only ADMIN can delete an OWNER.");
         }
-        if (deleterRole.isEmployed()) {
-            throw new RoleNotAllowedException("Employed cannot delete users");
-        }
-        if (deleterRole.isCustomer()) {
-            throw new RoleNotAllowedException("Customers cannot delete users");
+
+        if (targetRole.isEmployed() && !requesterRole.isOwner()) {
+            throw new RoleNotAllowedException("Only OWNER can delete an EMPLOYED.");
         }
     }
 }

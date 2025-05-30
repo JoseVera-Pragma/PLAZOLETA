@@ -42,16 +42,20 @@ public class UserUseCase implements IUserServicePort {
     }
 
     @Override
-    public void updateUser(User user,Role creatorRole) {
-        userValidator.validateUserUpdate(user, creatorRole);
+    public void updateUser(User user,Role updaterRole) {
+        userValidator.validateUserUpdate(user, updaterRole);
         userPersistencePort.updateUser(user);
     }
 
     @Override
-    public void deleteUser(Long id) {
-        if (userPersistencePort.getUser(id) == null) {
+    public void deleteUser(Long id, Role roleEliminator) {
+        User deleteUser = userPersistencePort.getUser(id);
+        if (deleteUser == null) {
             throw new UserNotFoundException("Cannot delete: User not found with ID: " + id);
         }
+
+        userValidator.validateUserUpdate(deleteUser, roleEliminator);
+
         userPersistencePort.deleteUser(id);
     }
 
