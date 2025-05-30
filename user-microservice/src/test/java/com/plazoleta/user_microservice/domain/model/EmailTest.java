@@ -18,6 +18,17 @@ class EmailTest {
     }
 
     @Test
+    void shouldCreateEmailValid() {
+        Email email = new Email(validEmail);
+        assertTrue(email.equals(email));
+    }
+
+    @Test
+    void shoulThrowExceptionWhenEmailEqualToObjectNull() {
+        assertFalse(validEmail.equals(null));
+    }
+
+    @Test
     void shouldGetNewEmail() {
         Email email = new Email(validEmail);
         String value = email.getValue();
