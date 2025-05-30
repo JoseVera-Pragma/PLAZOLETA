@@ -1,3 +1,6 @@
+jwt:
+  secret: 5xPRj8GhjdTcVn4NkfQoK6LofqmjX2sIYcX20PFeBbufg2mKjVBPwERVJbIx2d90hlF3xz/zK4B6r6hQcmC0+A==
+
 server:
   port: 8082
   servlet:
