@@ -24,13 +24,16 @@ public class DishHandlerImpl implements IDishHandler {
     private final ICategoryServicePort categoryServicePort;
     private final IDishRequestMapper dishRequestMapper;
     private final IDishResponseMapper dishResponseMapper;
+    private final AuthenticatedUserHandlerImpl authenticatedUserHandler;
 
     @Override
-    public DishResponseDto createDish(Long restaurantId, Long ownerId, DishRequestDto dishRequestDto) {
+    public DishResponseDto createDish(Long restaurantId, DishRequestDto dishRequestDto) {
 
         DishData dishData = dishRequestMapper.toDishData(dishRequestDto);
 
         Category category = categoryServicePort.getCategoryByName(dishData.getCategoryName());
+
+        Long ownerId = authenticatedUserHandler.getCurrentUserId();
 
         Dish dish = Dish.builder()
                 .name(dishData.getName())
@@ -45,11 +48,13 @@ public class DishHandlerImpl implements IDishHandler {
     }
 
     @Override
-    public void updateDish(Long ownerId, Long dishId, DishUpdateRequestDto dishUpdateRequestDto) {
+    public void updateDish(Long dishId, DishUpdateRequestDto dishUpdateRequestDto) {
         Dish existingDish = dishServicePort.getById(dishId);
         if (existingDish == null) {
             throw new DishNotFoundException("Dish with ID " + dishId + " not found");
         }
+
+        Long ownerId = authenticatedUserHandler.getCurrentUserId();
 
         existingDish = Dish.builder()
                 .id(existingDish.getId())

@@ -7,6 +7,6 @@ import com.plazoleta.plazoleta_microservice.application.dto.response.DishRespons
 import java.util.List;
 
 public interface IDishHandler {
-    DishResponseDto createDish(Long restaurantId, Long ownerId, DishRequestDto dishRequestDto);
-    void updateDish(Long ownerId, Long dishId, DishUpdateRequestDto dishUpdateRequestDto);
+    DishResponseDto createDish(Long restaurantId, DishRequestDto dishRequestDto);
+    void updateDish(Long dishId, DishUpdateRequestDto dishUpdateRequestDto);
 }
