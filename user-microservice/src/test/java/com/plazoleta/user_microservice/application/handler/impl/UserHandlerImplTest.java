@@ -1,15 +1,18 @@
 package com.plazoleta.user_microservice.application.handler.impl;
 
+import com.plazoleta.user_microservice.application.dto.request.CreateBasicUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
-import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateOwnerRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IAuthenticatedUserHandler;
+import com.plazoleta.user_microservice.application.mapper.ICreateBasicUserMapper;
 import com.plazoleta.user_microservice.application.mapper.ICreateEmployedRequest;
 import com.plazoleta.user_microservice.application.mapper.IUserRequestMapper;
 import com.plazoleta.user_microservice.application.mapper.IUserResponseMapper;
 import com.plazoleta.user_microservice.domain.api.IRoleServicePort;
 import com.plazoleta.user_microservice.domain.api.IUserServicePort;
 import com.plazoleta.user_microservice.domain.model.*;
+
 
 import com.plazoleta.user_microservice.domain.spi.IPasswordEncoderPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +41,12 @@ class UserHandlerImplTest {
     private IUserRequestMapper userRequestMapper;
 
     @Mock
+    private ICreateEmployedRequest iCreateEmployedRequest;
+
+    @Mock
+    private ICreateBasicUserMapper createBasicUserMapper;
+
+    @Mock
     private IUserResponseMapper userResponseMapper;
 
     @Mock
@@ -46,13 +55,10 @@ class UserHandlerImplTest {
     @Mock
     private IAuthenticatedUserHandler authenticatedUserHandler;
 
-    @Mock
-    private ICreateEmployedRequest iCreateEmployedRequest;
-
     @InjectMocks
     private UserHandlerImpl userHandler;
 
-    private UserRequestDto requestDto;
+    private CreateOwnerRequestDto requestDto;
     private User user;
     private Role adminRole;
     private Role ownerRole;
@@ -72,7 +78,7 @@ class UserHandlerImplTest {
                 .password("password")
                 .role(ownerRole)
                 .build();
-        requestDto = new UserRequestDto();
+        requestDto = new CreateOwnerRequestDto();
         requestDto.setFirstName("First");
         requestDto.setLastName("Last");
         requestDto.setIdentityNumber("1231321322");
@@ -82,27 +88,38 @@ class UserHandlerImplTest {
         requestDto.setPassword("password");
     }
 
+
     @Test
-    void testCreateUser_WhenAdminCreates_ShouldAssignOwnerRole() {
+    void testCreateOwner_WhenAdminCreates_ShouldAssignOwnerRole() {
         when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_ADMIN".describeConstable());
         when(userRequestMapper.toUser(requestDto)).thenReturn(user);
         when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(adminRole);
         when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(ownerRole);
         when(passwordEncoder.encode("password")).thenReturn("$2a$10$abcdef");
 
-        userHandler.createUser(requestDto);
+        userHandler.createOwner(requestDto);
 
         assertEquals(ownerRole, user.getRole());
         verify(userServicePort).saveUser(user, adminRole);
     }
 
     @Test
-    void testCreateUser_WhenOtherRolesCreates_ShouldThrowsException() {
+    void testCreateOwner_WhenRoleNotAllowed_ShouldThrowException() {
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn(Optional.of("ROLE_ADMIN"));
+        when(userRequestMapper.toUser(requestDto)).thenReturn(user);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(ownerRole);
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> userHandler.createOwner(requestDto));
+        assertEquals("The current role is not allowed to create users.", thrown.getMessage());
+    }
+
+    @Test
+    void testCreateOwner_WhenOtherRolesCreates_ShouldThrowsException() {
         when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_ADMIN".describeConstable());
         when(userRequestMapper.toUser(requestDto)).thenReturn(user);
         when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(ownerRole);
 
-        assertThrows(IllegalArgumentException.class,()-> userHandler.createUser(requestDto));
+        assertThrows(IllegalArgumentException.class,()-> userHandler.createOwner(requestDto));
     }
 
     @Test
@@ -241,5 +258,267 @@ class UserHandlerImplTest {
 
         assertThrows(IllegalArgumentException.class, () -> userHandler.createEmployed(createEmployedRequestDto));
     }
+
+    @Test
+    void testCreateOwner_WhenNoRoleAvailable_ShouldAssignDefaultCustomerRole() {
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn(Optional.empty());
+        when(userRequestMapper.toUser(requestDto)).thenReturn(user);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(new Role(5L, RoleList.ROLE_CUSTOMER, "Cliente"));
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+
+        userHandler.createOwner(requestDto);
+
+        assertEquals(RoleList.ROLE_CUSTOMER, user.getRole().getName());
+    }
+
+    @Test
+    void testCreateOwner_WhenOwnerCreates_ShouldAssignEmployedRole() {
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn(Optional.of("ROLE_OWNER"));
+        when(userRequestMapper.toUser(requestDto)).thenReturn(user);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(ownerRole);
+
+        Role employedRole = new Role(3L, RoleList.ROLE_EMPLOYED, "Empleado");
+        when(roleServicePort.getRoleByName(RoleList.ROLE_EMPLOYED)).thenReturn(employedRole);
+        when(passwordEncoder.encode("password")).thenReturn("$2a$10$abcdef");
+
+        userHandler.createOwner(requestDto);
+
+        assertEquals(employedRole, user.getRole());
+        verify(userServicePort).saveUser(user, ownerRole);
+    }
+
+    @Test
+    void testCreateOwner_WhenEmployedCreates_ShouldAssignCustomerRole() {
+        Role employedRole = new Role(3L, RoleList.ROLE_EMPLOYED, "Empleado");
+        Role customerRole = new Role(4L, RoleList.ROLE_CUSTOMER, "Cliente");
+
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn(Optional.of("ROLE_EMPLOYED"));
+        when(userRequestMapper.toUser(requestDto)).thenReturn(user);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_EMPLOYED)).thenReturn(employedRole);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(customerRole);
+        when(passwordEncoder.encode("password")).thenReturn("$2a$10$abcdef");
+
+        userHandler.createOwner(requestDto);
+
+        assertEquals(customerRole, user.getRole());
+        verify(userServicePort).saveUser(user, employedRole);
+    }
+
+    @Test
+    void testCreateOwner_WhenNoRoleAuthenticated_ShouldAssignCustomerRoleByDefault() {
+        Role customerRole = new Role(4L, RoleList.ROLE_CUSTOMER, "Cliente");
+
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn(Optional.empty());
+        when(userRequestMapper.toUser(requestDto)).thenReturn(user);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(customerRole);
+        when(passwordEncoder.encode("password")).thenReturn("$2a$10$abcdef");
+
+        userHandler.createOwner(requestDto);
+
+        assertEquals(customerRole, user.getRole());
+        verify(userServicePort).saveUser(user, customerRole); // Aquí el creatorRole es customer por defecto
+    }
+
+    @Test
+    void testUpdateUser_NoAuthenticatedRole_ShouldThrowException() {
+        Long userId = 1L;
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                userHandler.updateUser(userId, requestDto));
+
+        assertEquals("No authenticated user role found.", exception.getMessage());
+    }
+
+    @Test
+    void testResolveRoleToAssign_AdminRole_ReturnsOwnerRole() {
+        Role adminRole = mock(Role.class);
+        when(adminRole.isAdmin()).thenReturn(true);
+
+        Role ownerRole = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(ownerRole);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(adminRole);
+
+        assertTrue(result.isPresent());
+        assertEquals(ownerRole, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_OwnerRole_ReturnsEmployedRole() {
+        Role ownerRole = mock(Role.class);
+        when(ownerRole.isAdmin()).thenReturn(false);
+        when(ownerRole.isOwner()).thenReturn(true);
+
+        Role employedRole = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_EMPLOYED)).thenReturn(employedRole);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(ownerRole);
+
+        assertTrue(result.isPresent());
+        assertEquals(employedRole, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_EmployedRole_ReturnsCustomerRole() {
+        Role employedRole = mock(Role.class);
+        when(employedRole.isAdmin()).thenReturn(false);
+        when(employedRole.isOwner()).thenReturn(false);
+        when(employedRole.isEmployed()).thenReturn(true);
+
+        Role customerRole = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(customerRole);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(employedRole);
+
+        assertTrue(result.isPresent());
+        assertEquals(customerRole, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_CustomerRole_ReturnsCustomerRole() {
+        Role customerRole = mock(Role.class);
+        when(customerRole.isAdmin()).thenReturn(false);
+        when(customerRole.isOwner()).thenReturn(false);
+        when(customerRole.isEmployed()).thenReturn(false);
+        when(customerRole.isCustomer()).thenReturn(true);
+
+        Role customerRoleResult = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(customerRoleResult);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(customerRole);
+
+        assertTrue(result.isPresent());
+        assertEquals(customerRoleResult, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_CustomerRoleOnly() {
+        Role customerRole = mock(Role.class);
+        when(customerRole.isAdmin()).thenReturn(false);
+        when(customerRole.isOwner()).thenReturn(false);
+        when(customerRole.isEmployed()).thenReturn(false);   // important
+        when(customerRole.isCustomer()).thenReturn(true);
+
+        Role customerRoleResult = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(customerRoleResult);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(customerRole);
+
+        assertTrue(result.isPresent());
+        assertEquals(customerRoleResult, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_NoMatchingRole() {
+        Role unknownRole = mock(Role.class);
+        when(unknownRole.isAdmin()).thenReturn(false);
+        when(unknownRole.isOwner()).thenReturn(false);
+        when(unknownRole.isEmployed()).thenReturn(false);
+        when(unknownRole.isCustomer()).thenReturn(false);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(unknownRole);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testResolveRoleToAssign_Admin() {
+        Role adminRole = mock(Role.class);
+        when(adminRole.isAdmin()).thenReturn(true);
+
+        Role ownerRole = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(ownerRole);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(adminRole);
+
+        assertTrue(result.isPresent());
+        assertEquals(ownerRole, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_Owner() {
+        Role owner = mock(Role.class);
+        when(owner.isAdmin()).thenReturn(false);
+        when(owner.isOwner()).thenReturn(true);
+
+        Role employedRole = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_EMPLOYED)).thenReturn(employedRole);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(owner);
+
+        assertTrue(result.isPresent());
+        assertEquals(employedRole, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_Employed() {
+        Role employed = mock(Role.class);
+        when(employed.isAdmin()).thenReturn(false);
+        when(employed.isOwner()).thenReturn(false);
+        when(employed.isEmployed()).thenReturn(true);
+
+        Role customerRole = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(customerRole);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(employed);
+
+        assertTrue(result.isPresent());
+        assertEquals(customerRole, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_Customer() {
+        Role customer = mock(Role.class);
+        when(customer.isAdmin()).thenReturn(false);
+        when(customer.isOwner()).thenReturn(false);
+        when(customer.isEmployed()).thenReturn(false);
+        when(customer.isCustomer()).thenReturn(true);
+
+        Role customerRole = new Role();
+        when(roleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER)).thenReturn(customerRole);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(customer);
+
+        assertTrue(result.isPresent());
+        assertEquals(customerRole, result.get());
+    }
+
+    @Test
+    void testResolveRoleToAssign_NoMatch() {
+        Role unknown = mock(Role.class);
+        when(unknown.isAdmin()).thenReturn(false);
+        when(unknown.isOwner()).thenReturn(false);
+        when(unknown.isEmployed()).thenReturn(false);
+        when(unknown.isCustomer()).thenReturn(false);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(unknown);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testResolveRoleToAssign_AdminWithNullRole() {
+        Role adminRole = mock(Role.class);
+        when(adminRole.isAdmin()).thenReturn(true);
+
+        when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(null);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(adminRole);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testResolveRoleToAssign_AdminRoleNull() {
+        Role adminRole = mock(Role.class);
+        when(adminRole.isAdmin()).thenReturn(true);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(null);
+
+        Optional<Role> result = userHandler.resolveRoleToAssign(adminRole);
+
+        assertTrue(result.isEmpty());
+    }
+
 
 }
