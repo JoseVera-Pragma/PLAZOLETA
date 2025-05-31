@@ -46,6 +46,7 @@ public class BeanConfiguration {
     private final IUserFeignClient userFeignClient;
     private final IRestaurantRequestMapper restaurantRequestMapper;
     private final IRestaurantResponseMapper restaurantResponseMapper;
+    private final IRestauranteResumenResponseMapper restauranteResumenResponseMapper;
     private final IDishRequestMapper dishRequestMapper;
     private final IDishResponseMapper dishResponseMapper;
     private final ICategoryRequestMapper categoryRequestMapper;
@@ -70,7 +71,7 @@ public class BeanConfiguration {
 
     @Bean
     public IRestaurantHandler restaurantHandler(IRestaurantServicePort restaurantServicePort) {
-        return new RestaurantHandlerImpl(restaurantServicePort, restaurantRequestMapper, restaurantResponseMapper);
+        return new RestaurantHandlerImpl(restaurantServicePort, restaurantRequestMapper, restaurantResponseMapper, restauranteResumenResponseMapper);
     }
 
     @Bean
