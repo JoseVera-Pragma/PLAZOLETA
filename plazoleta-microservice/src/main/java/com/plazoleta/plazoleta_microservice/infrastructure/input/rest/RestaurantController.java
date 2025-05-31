@@ -20,15 +20,15 @@ public class RestaurantController {
     private final IRestaurantHandler restaurantHandler;
     private final IDishHandler dishHandler;
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> createRestaurant(@Valid @RequestBody RestaurantRequestDto restaurantRequestDto) {
         restaurantHandler.createRestaurant(restaurantRequestDto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @PreAuthorize("hasRole('OWNER')")
     @PostMapping("/{restaurantId}/dishes")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<DishResponseDto> createDish(@PathVariable Long restaurantId,
                                                       @Valid @RequestBody DishRequestDto dishRequestDto) {
         DishResponseDto createdDish = dishHandler.createDish(restaurantId, dishRequestDto);
@@ -36,12 +36,20 @@ public class RestaurantController {
 
     }
 
-    @PreAuthorize("hasRole('OWNER')")
     @PutMapping("/{restaurantId}/dishes/{dishId}")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<Void> updateDish(@PathVariable Long restaurantId,
                                            @PathVariable Long dishId,
                                            @Valid @RequestBody DishUpdateRequestDto dishUpdateRequestDto) {
         dishHandler.updateDish(dishId, dishUpdateRequestDto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/dishes/{dishId}/status")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<Void> changeDishStatus(@PathVariable Long dishId,
+                                                 @RequestParam boolean activate) {
+        dishHandler.changeDishStatus(dishId, activate);
         return ResponseEntity.noContent().build();
     }
 }
