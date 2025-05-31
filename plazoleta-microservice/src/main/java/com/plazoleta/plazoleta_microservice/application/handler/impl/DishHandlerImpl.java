@@ -69,4 +69,9 @@ public class DishHandlerImpl implements IDishHandler {
         dishServicePort.update(ownerId, existingDish);
     }
 
+    @Override
+    public void changeDishStatus(Long dishId, boolean activate) {
+        Long userId = authenticatedUserHandler.getCurrentUserId();
+        dishServicePort.changeDishStatus(userId, dishId, activate);
+    }
 }
