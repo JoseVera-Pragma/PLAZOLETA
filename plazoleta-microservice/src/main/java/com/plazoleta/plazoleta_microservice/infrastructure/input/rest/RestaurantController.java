@@ -4,15 +4,19 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestD
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.RestaurantRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
+import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResumeResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
 import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -88,5 +92,25 @@ public class RestaurantController {
                                                  @RequestParam boolean activate) {
         dishHandler.changeDishStatus(dishId, activate);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "Listar restaurantes paginados y ordenados alfabéticamente",
+            description = "Devuelve una lista paginada de restaurantes con su nombre y logo, ordenados por nombre ascendente.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente"),
+                    @ApiResponse(responseCode = "400", description = "Parámetros inválidos", content = @Content),
+                    @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
+            }
+    )
+    @GetMapping
+    public Page<RestaurantResumeResponseDto> getRestaurants(
+            @Parameter(description = "Número de página (inicia en 0)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Cantidad de elementos por página", example = "10")
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return restaurantHandler.restaurantList(page, size);
     }
 }
