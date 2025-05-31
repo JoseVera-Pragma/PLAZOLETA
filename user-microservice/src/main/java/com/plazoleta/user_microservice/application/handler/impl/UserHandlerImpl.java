@@ -1,10 +1,12 @@
 package com.plazoleta.user_microservice.application.handler.impl;
 
+import com.plazoleta.user_microservice.application.dto.request.CreateBasicUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
-import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateOwnerRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IAuthenticatedUserHandler;
 import com.plazoleta.user_microservice.application.handler.IUserHandler;
+import com.plazoleta.user_microservice.application.mapper.ICreateBasicUserMapper;
 import com.plazoleta.user_microservice.application.mapper.ICreateEmployedRequest;
 import com.plazoleta.user_microservice.application.mapper.IUserRequestMapper;
 import com.plazoleta.user_microservice.application.mapper.IUserResponseMapper;
@@ -30,38 +32,32 @@ public class UserHandlerImpl implements IUserHandler {
     private final IRoleServicePort iRoleServicePort;
     private final IUserRequestMapper iUserRequestMapper;
     private final ICreateEmployedRequest iCreateEmployedRequest;
+    private final ICreateBasicUserMapper iCreateBasicUserMapper;
     private final IUserResponseMapper iUserResponseMapper;
     private final IPasswordEncoderPort passwordEncoder;
     private final IAuthenticatedUserHandler authenticatedUserHandler;
 
     @Override
-    public void createUser(UserRequestDto userRequestDto) {
-        User user = iUserRequestMapper.toUser(userRequestDto);
+    public void createOwner(CreateOwnerRequestDto createOwnerRequestDto) {
+        User user = iUserRequestMapper.toUser(createOwnerRequestDto);
 
-        String currentUserRole = authenticatedUserHandler.getCurrentUserRole()
-                .orElseThrow(() -> new IllegalArgumentException("No authenticated user role found."));
-
-        Role creatorRole = iRoleServicePort.getRoleByName(RoleList.valueOf(currentUserRole));
-        Role newUserRole = resolveRoleToAssign(creatorRole).orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users."));
-        user.setRole(newUserRole);
-        String passwordEncode = passwordEncoder.encode(userRequestDto.getPassword());
-        user.setPassword(passwordEncode);
-        iUserServicePort.saveUser(user, creatorRole);
+        processUserCreation(user);
     }
 
     @Override
     public void createEmployed(CreateEmployedRequestDto createEmployedRequestDto) {
         User user = iCreateEmployedRequest.toUser(createEmployedRequestDto);
 
-        String currentUserRole = authenticatedUserHandler.getCurrentUserRole()
-                .orElseThrow(() -> new IllegalArgumentException("No authenticated user role found."));
+        processUserCreation(user);
+    }
 
-        Role creatorRole = iRoleServicePort.getRoleByName(RoleList.valueOf(currentUserRole));
-        Role newUserRole = resolveRoleToAssign(creatorRole).orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users."));
+    @Override
+    public void createCustomer(CreateBasicUserRequestDto createBasicUserRequestDto) {
+        User user = iCreateBasicUserMapper.toUser(createBasicUserRequestDto);
+        Role newUserRole = iRoleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER);
         user.setRole(newUserRole);
-        String passwordEncode = passwordEncoder.encode(createEmployedRequestDto.getPassword());
-        user.setPassword(passwordEncode);
-        iUserServicePort.saveUser(user, creatorRole);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        iUserServicePort.saveUser(user, newUserRole);
     }
 
     @Override
@@ -83,19 +79,19 @@ public class UserHandlerImpl implements IUserHandler {
     }
 
     @Override
-    public void updateUser(Long id, UserRequestDto userRequestDto) {
+    public void updateUser(Long id, CreateOwnerRequestDto createOwnerRequestDto) {
         iUserServicePort.getUser(id);
 
-        User userToUpdate = iUserRequestMapper.toUser(userRequestDto);
+        User userToUpdate = iUserRequestMapper.toUser(createOwnerRequestDto);
 
         String updaterRole = authenticatedUserHandler.getCurrentUserRole()
                 .orElseThrow(() -> new IllegalArgumentException("No authenticated user role found."));
 
         Role role = iRoleServicePort.getRoleByName(RoleList.valueOf(updaterRole));
         userToUpdate.setId(id);
-        userToUpdate.setRole(resolveRoleToAssign(role).orElseThrow(()-> new IllegalArgumentException("The current role is not allowed to create users.")));
+        userToUpdate.setRole(resolveRoleToAssign(role).orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users.")));
 
-        String passwordEncode = passwordEncoder.encode(userRequestDto.getPassword());
+        String passwordEncode = passwordEncoder.encode(createOwnerRequestDto.getPassword());
         userToUpdate.setPassword(passwordEncode);
         iUserServicePort.updateUser(userToUpdate, role);
     }
@@ -112,15 +108,28 @@ public class UserHandlerImpl implements IUserHandler {
         iUserServicePort.deleteUser(id, roleEliminator);
     }
 
-    private Optional<Role> resolveRoleToAssign(Role creatorRole) {
+    private void processUserCreation(User user) {
+        String currentUserRole = authenticatedUserHandler.getCurrentUserRole()
+                .filter(role -> !role.equals("ROLE_ANONYMOUS"))
+                .orElse("ROLE_CUSTOMER");
+        Role creatorRole = iRoleServicePort.getRoleByName(RoleList.valueOf(currentUserRole));
+        Role newUserRole = resolveRoleToAssign(creatorRole)
+                .orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users."));
+        user.setRole(newUserRole);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        iUserServicePort.saveUser(user, creatorRole);
+    }
+
+    public Optional<Role> resolveRoleToAssign(Role creatorRole) {
         if (creatorRole.isAdmin()) {
             return Optional.ofNullable(iRoleServicePort.getRoleByName(RoleList.ROLE_OWNER));
         }
         if (creatorRole.isOwner()) {
             return Optional.ofNullable(iRoleServicePort.getRoleByName(RoleList.ROLE_EMPLOYED));
         }
-
+        if (creatorRole.isEmployed() || creatorRole.isCustomer()){
+            return Optional.ofNullable(iRoleServicePort.getRoleByName(RoleList.ROLE_CUSTOMER));
+        }
         return Optional.empty();
     }
-
 }

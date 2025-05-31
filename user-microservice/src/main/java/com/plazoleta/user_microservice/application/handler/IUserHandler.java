@@ -1,16 +1,19 @@
 package com.plazoleta.user_microservice.application.handler;
 
+import com.plazoleta.user_microservice.application.dto.request.CreateBasicUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
-import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateOwnerRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 
 import java.util.List;
 
 public interface IUserHandler {
 
-    void createUser(UserRequestDto userRequestDto);
+    void createOwner(CreateOwnerRequestDto createOwnerRequestDto);
 
     void createEmployed(CreateEmployedRequestDto createEmployedRequestDto);
+
+    void createCustomer(CreateBasicUserRequestDto createBasicUserRequestDto);
 
     UserResponseDto getUser(Long id);
 
@@ -18,7 +21,7 @@ public interface IUserHandler {
 
     List<UserResponseDto> getAllUsers();
 
-    void updateUser(Long id, UserRequestDto userRequestDto);
+    void updateUser(Long id, CreateOwnerRequestDto createOwnerRequestDto);
 
     void deleteUser(Long id);
 
