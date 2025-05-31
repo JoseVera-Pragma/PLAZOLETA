@@ -1,5 +1,6 @@
 package com.plazoleta.user_microservice.domain.model;
 
+import com.plazoleta.user_microservice.domain.exception.UnderAgeOwnerException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -332,6 +333,8 @@ class UserTest {
                 .password("p")
                 .build();
 
+
+        assertTrue(u1.equals(u1));
         assertEquals(u1, u2);
         assertEquals(u1.hashCode(), u2.hashCode());
     }
@@ -404,4 +407,76 @@ class UserTest {
         assertEquals(role, user.getRole());
     }
 
+    @Test
+    void shouldCreateValidUserWithoutOwnerRole() {
+        User user = User.builder()
+                .firstName("Juan")
+                .lastName("Pérez")
+                .identityNumber(new IdentityNumber("12345678"))
+                .phoneNumber(new PhoneNumber("3001234567"))
+                .email(new Email("juan@email.com"))
+                .password("securePassword")
+                .build();
+
+        assertNotNull(user);
+    }
+
+    @Test
+    void shouldCreateValidOwnerUserWith18OrMoreYears() {
+        LocalDate dob = LocalDate.now().minusYears(20);
+        Role role = new Role(1L,RoleList.ROLE_OWNER,"owner");
+
+        User user = User.builder()
+                .firstName("Ana")
+                .lastName("Gomez")
+                .identityNumber(new IdentityNumber("87654321"))
+                .phoneNumber(new PhoneNumber("3101234567"))
+                .email(new Email("ana@email.com"))
+                .password("strongPass")
+                .role(role)
+                .dateOfBirth(dob)
+                .build();
+
+        assertNotNull(user);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenOwnerHasNoDateOfBirth() {
+        Role role = new Role(1L,RoleList.ROLE_OWNER,"owner");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->
+                User.builder()
+                        .firstName("Luis")
+                        .lastName("Torres")
+                        .identityNumber(new IdentityNumber("99988877"))
+                        .phoneNumber(new PhoneNumber("3004567890"))
+                        .email(new Email("luis@email.com"))
+                        .password("abc123")
+                        .role(role)
+                        .build()
+        );
+
+        assertEquals("Date of birth is required", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenOwnerIsUnderage() {
+        Role role = new Role(1L,RoleList.ROLE_OWNER,"owner");
+        LocalDate dob = LocalDate.now().minusYears(17);
+
+        Exception exception = assertThrows(UnderAgeOwnerException.class, () ->
+                User.builder()
+                        .firstName("Sara")
+                        .lastName("Mora")
+                        .identityNumber(new IdentityNumber("55566677"))
+                        .phoneNumber(new PhoneNumber("3211234567"))
+                        .email(new Email("sara@email.com"))
+                        .password("myPass")
+                        .role(role)
+                        .dateOfBirth(dob)
+                        .build()
+        );
+
+        assertEquals("User must be at least 18 years old to be an OWNER", exception.getMessage());
+    }
 }
