@@ -323,4 +323,17 @@ class DishHandlerImplTest {
         verify(dishServicePort, never()).update(any(), any());
     }
 
+    @Test
+    void shouldChangeDishStatusSuccessfully() {
+        Long dishId = 1L;
+        boolean activate = true;
+        Long userId = 42L;
+
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(userId);
+
+        dishHandler.changeDishStatus(dishId, activate);
+
+        verify(authenticatedUserHandler).getCurrentUserId();
+        verify(dishServicePort).changeDishStatus(userId, dishId, activate);
+    }
 }
