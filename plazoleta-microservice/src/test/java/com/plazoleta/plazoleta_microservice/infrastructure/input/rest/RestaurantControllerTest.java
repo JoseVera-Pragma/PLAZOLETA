@@ -168,4 +168,19 @@ class RestaurantControllerTest {
 
         verify(dishHandler).updateDish(eq(dishId), any(DishUpdateRequestDto.class));
     }
+
+
+    @Test
+    @WithMockUser(roles = "OWNER")
+    void shouldChangeDishStatusSuccessfully() throws Exception {
+        Long dishId = 1L;
+        boolean activate = true;
+
+        mockMvc.perform(patch("/restaurants/dishes/"+dishId+"/status")
+                        .param("activate", String.valueOf(activate))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        verify(dishHandler).changeDishStatus(dishId, activate);
+    }
 }
