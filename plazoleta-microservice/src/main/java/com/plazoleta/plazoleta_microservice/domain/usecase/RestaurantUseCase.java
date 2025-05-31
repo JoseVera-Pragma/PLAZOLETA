@@ -8,6 +8,8 @@ import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.model.User;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.plazoleta_microservice.domain.spi.IUserSecurityPort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public class RestaurantUseCase implements IRestaurantServicePort {
 
@@ -35,5 +37,10 @@ public class RestaurantUseCase implements IRestaurantServicePort {
         }
 
         restaurantPersistencePort.saveRestaurant(restaurant);
+    }
+
+    @Override
+    public Page<Restaurant> findAll(Pageable pageable){
+        return restaurantPersistencePort.findAll(pageable);
     }
 }
