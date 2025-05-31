@@ -1,9 +1,11 @@
 package com.plazoleta.user_microservice.application.handler.impl;
 
+import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IAuthenticatedUserHandler;
 import com.plazoleta.user_microservice.application.handler.IUserHandler;
+import com.plazoleta.user_microservice.application.mapper.ICreateEmployedRequest;
 import com.plazoleta.user_microservice.application.mapper.IUserRequestMapper;
 import com.plazoleta.user_microservice.application.mapper.IUserResponseMapper;
 import com.plazoleta.user_microservice.domain.api.IRoleServicePort;
@@ -27,6 +29,7 @@ public class UserHandlerImpl implements IUserHandler {
     private final IUserServicePort iUserServicePort;
     private final IRoleServicePort iRoleServicePort;
     private final IUserRequestMapper iUserRequestMapper;
+    private final ICreateEmployedRequest iCreateEmployedRequest;
     private final IUserResponseMapper iUserResponseMapper;
     private final IPasswordEncoderPort passwordEncoder;
     private final IAuthenticatedUserHandler authenticatedUserHandler;
@@ -42,6 +45,21 @@ public class UserHandlerImpl implements IUserHandler {
         Role newUserRole = resolveRoleToAssign(creatorRole).orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users."));
         user.setRole(newUserRole);
         String passwordEncode = passwordEncoder.encode(userRequestDto.getPassword());
+        user.setPassword(passwordEncode);
+        iUserServicePort.saveUser(user, creatorRole);
+    }
+
+    @Override
+    public void createEmployed(CreateEmployedRequestDto createEmployedRequestDto) {
+        User user = iCreateEmployedRequest.toUser(createEmployedRequestDto);
+
+        String currentUserRole = authenticatedUserHandler.getCurrentUserRole()
+                .orElseThrow(() -> new IllegalArgumentException("No authenticated user role found."));
+
+        Role creatorRole = iRoleServicePort.getRoleByName(RoleList.valueOf(currentUserRole));
+        Role newUserRole = resolveRoleToAssign(creatorRole).orElseThrow(() -> new IllegalArgumentException("The current role is not allowed to create users."));
+        user.setRole(newUserRole);
+        String passwordEncode = passwordEncoder.encode(createEmployedRequestDto.getPassword());
         user.setPassword(passwordEncode);
         iUserServicePort.saveUser(user, creatorRole);
     }
