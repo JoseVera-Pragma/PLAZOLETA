@@ -9,7 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -93,5 +95,51 @@ class RestaurantJpaAdapterTest {
         assertThrows(RestaurantNotFoundException.class, () -> adapter.getById(restaurantId));
         verify(restaurantRepository).findById(restaurantId);
         verifyNoInteractions(restaurantEntityMapper);
+    }
+
+    @Test
+    void shouldReturnMappedPageOfRestaurants() {
+        Pageable pageable = PageRequest.of(0, 2, Sort.by("name").ascending());
+
+        RestaurantEntity entity1 = new RestaurantEntity(1L,"A","Logo 1","1321231321","31215454","calle 1 2d2d",1L);
+        RestaurantEntity entity2 = new RestaurantEntity(2L,"B","Logo 2","1321231321","31215454","calle 1 2d2d",1L);
+        List<RestaurantEntity> entities = List.of(entity1, entity2);
+        Page<RestaurantEntity> entityPage = new PageImpl<>(entities, pageable, entities.size());
+
+
+        Restaurant model1 = new Restaurant.Builder()
+                .id(1L)
+                .name("A")
+                .urlLogo("Logo 1")
+                .nit("1321231321")
+                .phoneNumber("31215454")
+                .address("calle 1 2d2d")
+                .idOwner(1L)
+                .build();
+
+        Restaurant model2 = new Restaurant.Builder()
+                .id(2L)
+                .name("B")
+                .urlLogo("Logo 2")
+                .nit("1321231321")
+                .phoneNumber("31215454")
+                .address("calle 1 2d2d")
+                .idOwner(1L)
+                .build();
+
+        when(restaurantRepository.findAll(pageable)).thenReturn(entityPage);
+        when(restaurantEntityMapper.toRestaurant(entity1)).thenReturn(model1);
+        when(restaurantEntityMapper.toRestaurant(entity2)).thenReturn(model2);
+
+        Page<Restaurant> result = adapter.findAll(pageable);
+
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals("A", result.getContent().get(0).getName());
+        assertEquals("B", result.getContent().get(1).getName());
+
+        verify(restaurantRepository).findAll(pageable);
+        verify(restaurantEntityMapper).toRestaurant(entity1);
+        verify(restaurantEntityMapper).toRestaurant(entity2);
     }
 }
