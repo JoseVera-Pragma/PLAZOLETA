@@ -5,12 +5,16 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestD
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.RestaurantRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
+import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResumeResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
 import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -18,13 +22,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @TestPropertySource(locations = "classpath:application-test.properties")
 @Transactional
 class RestaurantControllerTest {
@@ -182,5 +188,32 @@ class RestaurantControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(dishHandler).changeDishStatus(dishId, activate);
+    }
+
+    @Test
+    void shouldReturnPaginatedRestaurantsList() throws Exception {
+        int page = 0;
+        int size = 2;
+
+        RestaurantResumeResponseDto dto1 = new RestaurantResumeResponseDto("Restaurante A", "logoA");
+        RestaurantResumeResponseDto dto2 = new RestaurantResumeResponseDto("Restaurante B", "logoB");
+
+        List<RestaurantResumeResponseDto> dtoList = List.of(dto1, dto2);
+        Page<RestaurantResumeResponseDto> pageResult = new PageImpl<>(dtoList, PageRequest.of(page, size), dtoList.size());
+
+        when(restaurantHandler.restaurantList(page, size)).thenReturn(pageResult);
+
+        mockMvc.perform(get("/restaurants")
+                        .param("page", String.valueOf(page))
+                        .param("size", String.valueOf(size))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].name").value("Restaurante A"))
+                .andExpect(jsonPath("$.content[0].urlLogo").value("logoA"))
+                .andExpect(jsonPath("$.content[1].name").value("Restaurante B"))
+                .andExpect(jsonPath("$.content[1].urlLogo").value("logoB"));
+
+        verify(restaurantHandler).restaurantList(page, size);
     }
 }
