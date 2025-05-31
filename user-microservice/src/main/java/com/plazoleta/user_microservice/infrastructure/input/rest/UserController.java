@@ -1,5 +1,6 @@
 package com.plazoleta.user_microservice.infrastructure.input.rest;
 
+import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IUserHandler;
@@ -22,6 +23,13 @@ public class UserController {
     @PostMapping
     public ResponseEntity<Void> createUser(@Valid @RequestBody UserRequestDto userRequestDto) {
         iUserHandler.createUser(userRequestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PreAuthorize("hasRole('OWNER')")
+    @PostMapping("/employed")
+    public ResponseEntity<Void> createEmployed(@Valid @RequestBody CreateEmployedRequestDto createEmployedRequestDto) {
+        iUserHandler.createEmployed(createEmployedRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
