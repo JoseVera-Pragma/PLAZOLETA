@@ -1,5 +1,7 @@
 package com.plazoleta.user_microservice.domain.model;
 
+import com.plazoleta.user_microservice.domain.exception.UnderAgeOwnerException;
+
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Objects;
@@ -33,6 +35,17 @@ public class User {
         }
         if (builder.password == null || builder.password.isBlank()) {
             throw new IllegalArgumentException("Password is required");
+        }
+        if (builder.role != null && builder.role.isOwner()) {
+            if (builder.dateOfBirth == null) {
+                throw new IllegalArgumentException("Date of birth is required");
+            }
+            LocalDate today = LocalDate.now();
+            Period age = Period.between(builder.dateOfBirth, today);
+
+            if (age.getYears() < 18) {
+                throw new UnderAgeOwnerException("User must be at least 18 years old to be an OWNER");
+            }
         }
 
         this.id = builder.id;
