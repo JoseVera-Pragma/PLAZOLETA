@@ -11,6 +11,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.*;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -93,5 +96,42 @@ class RestaurantUseCaseTest {
         assertDoesNotThrow(() -> restaurantUseCase.createRestaurant(validRestaurant));
 
         verify(restaurantPersistencePort, times(1)).saveRestaurant(validRestaurant);
+    }
+
+    @Test
+    void testFindAllRestaurantsWithPagination() {
+        Pageable pageable = PageRequest.of(0, 5, Sort.by("name").ascending());
+
+        Restaurant r1 = new Restaurant.Builder()
+                .id(1L)
+                .name("A")
+                .urlLogo("Logo 1")
+                .nit("1321231321")
+                .phoneNumber("31215454")
+                .address("calle 1 2d2d")
+                .idOwner(1L)
+                .build();
+
+        Restaurant r2 = new Restaurant.Builder()
+                .id(2L)
+                .name("B")
+                .urlLogo("Logo 2")
+                .nit("1321231321")
+                .phoneNumber("31215454")
+                .address("calle 1 2d2d")
+                .idOwner(1L)
+                .build();
+
+        List<Restaurant> restaurantList = List.of(r1, r2);
+        Page<Restaurant> expectedPage = new PageImpl<>(restaurantList, pageable, restaurantList.size());
+
+        when(restaurantPersistencePort.findAll(pageable)).thenReturn(expectedPage);
+
+        Page<Restaurant> result = restaurantUseCase.findAll(pageable);
+
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals("A", result.getContent().getFirst().getName());
+        verify(restaurantPersistencePort).findAll(pageable);
     }
 }
