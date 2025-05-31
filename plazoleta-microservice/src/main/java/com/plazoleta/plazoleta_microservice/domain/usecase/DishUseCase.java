@@ -87,4 +87,29 @@ public class DishUseCase implements IDishServicePort {
                 .build();
         dishPersistencePort.updateDish(updatedDish);
     }
+
+    @Override
+    public void changeDishStatus(Long ownerId, Long dishId, boolean activate) {
+
+        Dish dish = dishPersistencePort.getById(dishId);
+
+        if (dish == null) {
+            throw new DishNotFoundException("Dish with ID " + dishId + " not found");
+        }
+
+        Restaurant restaurant = restaurantPersistencePort
+                .getById(dish.getRestaurantId());
+
+        if (restaurant == null) {
+            throw new RestaurantNotFoundException("Restaurant with ID " + dish.getRestaurantId() + " not found");
+        }
+
+        if (!ownerId.equals(restaurant.getIdOwner())) {
+            throw new UnauthorizedOwnerException("Owner ID " + ownerId + " is not authorized to update dishes for restaurant with ID " + dish.getRestaurantId());
+        }
+
+        Dish updatedDish = activate ? dish.activate() : dish.deactivate();
+
+        dishPersistencePort.updateDish(updatedDish);
+    }
 }
