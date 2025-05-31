@@ -1,8 +1,9 @@
 package com.plazoleta.user_microservice.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plazoleta.user_microservice.application.dto.request.CreateBasicUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
-import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateOwnerRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IUserHandler;
 import com.plazoleta.user_microservice.domain.model.*;
@@ -25,8 +26,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,7 +55,7 @@ class SimpleUserControllerTest {
                 .firstName("Super")
                 .lastName("Admin")
                 .identityNumber(new IdentityNumber("999999999"))
-                .dateOfBirth(LocalDate.of(1990,1,1))
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
                 .phoneNumber(new PhoneNumber("+573000000000"))
                 .email(new Email("admin@plazoleta.com"))
                 .password("encrypted")
@@ -66,7 +67,7 @@ class SimpleUserControllerTest {
                 .firstName("Super")
                 .lastName("Admin")
                 .identityNumber(new IdentityNumber("999999999"))
-                .dateOfBirth(LocalDate.of(1990,1,1))
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
                 .phoneNumber(new PhoneNumber("+573000000000"))
                 .email(new Email("admin@plazoleta.com"))
                 .password("encrypted")
@@ -78,10 +79,19 @@ class SimpleUserControllerTest {
     }
 
     @Test
-    void createUser_shouldReturnCreated() throws Exception {
-        UserRequestDto userDto = new UserRequestDto("Jose", "Perez", "123456", "321654987", LocalDate.of(1999, 5, 5), "jose@email.com", "pass123");
+    @WithMockUser(roles = "ADMIN")
+    void createOwner_shouldReturnCreated() throws Exception {
+        CreateOwnerRequestDto userDto = CreateOwnerRequestDto.builder()
+                .firstName("Jose")
+                .lastName("Perez")
+                .identityNumber("123456")
+                .phoneNumber("321654987")
+                .email("jose@email.com")
+                .password("pass123")
+                .dateOfBirth(LocalDate.of(1999, 5, 5))
+                .build();
 
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users/owners")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userDto)))
                 .andExpect(status().isCreated());
@@ -90,7 +100,7 @@ class SimpleUserControllerTest {
     @Test
     void getAllUsers_withAdminRole_shouldReturnOk() throws Exception {
         List<UserResponseDto> mockUsers = List.of(
-                new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww","ADMIN")
+                new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww", "ADMIN")
         );
 
         Mockito.when(userHandler.getAllUsers()).thenReturn(mockUsers);
@@ -104,7 +114,7 @@ class SimpleUserControllerTest {
     @Test
     void getUserById_shouldReturnUser() throws Exception {
         Long userId = 1L;
-        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww","ADMIN");
+        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww", "ADMIN");
 
         Mockito.when(userHandler.getUser(userId)).thenReturn(user);
 
@@ -117,7 +127,7 @@ class SimpleUserControllerTest {
     @Test
     void getUserByEmail_shouldReturnUser() throws Exception {
         String email = "admin@plazoleta.com";
-        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), email, "psww","ADMIN");
+        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), email, "psww", "ADMIN");
 
         Mockito.when(userHandler.getUserByEmail(email)).thenReturn(user);
 
@@ -130,7 +140,15 @@ class SimpleUserControllerTest {
     @Test
     void updateUser_shouldReturnOk() throws Exception {
         Long userId = 1L;
-        UserRequestDto updatedUser = new UserRequestDto("Jose", "Perez", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww");
+        CreateOwnerRequestDto updatedUser = CreateOwnerRequestDto.builder()
+                .firstName("Jose")
+                .lastName("Perez")
+                .identityNumber("123456")
+                .phoneNumber("321654987")
+                .email("jose@email.com")
+                .password("pass123")
+                .dateOfBirth(LocalDate.of(1999, 5, 5))
+                .build();
 
         mockMvc.perform(put("/users/" + userId)
                         .header("Authorization", "Bearer " + adminToken)
@@ -151,10 +169,16 @@ class SimpleUserControllerTest {
     @Test
     @WithMockUser(roles = "OWNER")
     void testCreateEmployed_WithOwnerRole_ReturnsCreated() throws Exception {
+        CreateEmployedRequestDto employedRequestDto = CreateEmployedRequestDto.builder()
+                .firstName("Jose")
+                .lastName("Perez")
+                .identityNumber("123456")
+                .phoneNumber("321654987")
+                .email("jose@email.com")
+                .password("pass123")
+                .build();
 
-        CreateEmployedRequestDto employedRequestDto = new CreateEmployedRequestDto("Jose", "Perez", "123456", "321654987", "jose@email.com", "pass123");
-
-        mockMvc.perform(post("/users/employed")
+        mockMvc.perform(post("/users/employeds")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(employedRequestDto)))
@@ -164,8 +188,16 @@ class SimpleUserControllerTest {
     @Test
     @WithMockUser(roles = "EMPLOYED")
     void testCreateEmployed_WithInvalidRole_ReturnsForbidden() throws Exception {
-        CreateEmployedRequestDto employedRequestDto = new CreateEmployedRequestDto("Jose", "Perez", "123456", "321654987", "jose@email.com", "pass123");
-        mockMvc.perform(post("/users/employed")
+        CreateEmployedRequestDto employedRequestDto = CreateEmployedRequestDto.builder()
+                .firstName("Jose")
+                .lastName("Perez")
+                .identityNumber("123456")
+                .phoneNumber("321654987")
+                .email("jose@email.com")
+                .password("pass123")
+                .build();
+
+        mockMvc.perform(post("/users/employeds")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(employedRequestDto)))
@@ -173,4 +205,24 @@ class SimpleUserControllerTest {
 
         verify(userHandler, never()).createEmployed(any());
     }
+
+    @Test
+    void createCustomer_shouldReturnCreated() throws Exception {
+        CreateBasicUserRequestDto customerDto = CreateBasicUserRequestDto.builder()
+                .firstName("Ana")
+                .lastName("Lopez")
+                .identityNumber("987654321")
+                .phoneNumber("3101234567")
+                .email("ana.customer@email.com")
+                .password("custpass123")
+                .build();
+
+        mockMvc.perform(post("/users/customers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(customerDto)))
+                .andExpect(status().isCreated());
+
+        Mockito.verify(userHandler).createCustomer(Mockito.any(CreateBasicUserRequestDto.class));
+    }
+
 }
