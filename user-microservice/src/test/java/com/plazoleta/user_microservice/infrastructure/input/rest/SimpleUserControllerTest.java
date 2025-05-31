@@ -1,6 +1,7 @@
 package com.plazoleta.user_microservice.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IUserHandler;
@@ -13,12 +14,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,6 +45,7 @@ class SimpleUserControllerTest {
     private ObjectMapper objectMapper;
 
     private String adminToken;
+    private String ownerToken;
 
     @BeforeEach
     void setUp() {
@@ -55,7 +61,20 @@ class SimpleUserControllerTest {
                 .role(new Role(1L, RoleList.ROLE_ADMIN, "Administrador"))
                 .build();
 
+        User owner = User.builder()
+                .id(1L)
+                .firstName("Super")
+                .lastName("Admin")
+                .identityNumber(new IdentityNumber("999999999"))
+                .dateOfBirth(LocalDate.of(1990,1,1))
+                .phoneNumber(new PhoneNumber("+573000000000"))
+                .email(new Email("admin@plazoleta.com"))
+                .password("encrypted")
+                .role(new Role(1L, RoleList.ROLE_OWNER, "Administrador"))
+                .build();
+
         adminToken = jwtTokenAdapter.generateToken(user);
+        ownerToken = jwtTokenAdapter.generateToken(owner);
     }
 
     @Test
@@ -127,5 +146,31 @@ class SimpleUserControllerTest {
         mockMvc.perform(delete("/users/" + userId)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "OWNER")
+    void testCreateEmployed_WithOwnerRole_ReturnsCreated() throws Exception {
+
+        CreateEmployedRequestDto employedRequestDto = new CreateEmployedRequestDto("Jose", "Perez", "123456", "321654987", "jose@email.com", "pass123");
+
+        mockMvc.perform(post("/users/employed")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(employedRequestDto)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYED")
+    void testCreateEmployed_WithInvalidRole_ReturnsForbidden() throws Exception {
+        CreateEmployedRequestDto employedRequestDto = new CreateEmployedRequestDto("Jose", "Perez", "123456", "321654987", "jose@email.com", "pass123");
+        mockMvc.perform(post("/users/employed")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(employedRequestDto)))
+                .andExpect(status().isForbidden());
+
+        verify(userHandler, never()).createEmployed(any());
     }
 }
