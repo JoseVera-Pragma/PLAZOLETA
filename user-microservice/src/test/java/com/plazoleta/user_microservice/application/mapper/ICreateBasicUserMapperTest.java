@@ -1,31 +1,28 @@
 package com.plazoleta.user_microservice.application.mapper;
 
-import com.plazoleta.user_microservice.application.dto.request.CreateOwnerRequestDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateBasicUserRequestDto;
 import com.plazoleta.user_microservice.domain.model.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.time.LocalDate;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class IUserRequestMapperTest {
+class ICreateBasicUserMapperTest {
 
     @Autowired
-    private IUserRequestMapper mapper;
+    private ICreateBasicUserMapper mapper;
 
     @Test
     void toUser_shouldMapUserRequestDtoToUserCorrectly() {
-        CreateOwnerRequestDto dto = new CreateOwnerRequestDto();
+        CreateBasicUserRequestDto dto = new CreateBasicUserRequestDto();
         dto.setFirstName("Jose");
         dto.setLastName("Vera");
         dto.setEmail("jose@correo.com");
         dto.setPhoneNumber("3216549870");
         dto.setIdentityNumber("1093854586");
         dto.setPassword("supersegura");
-        dto.setDateOfBirth(LocalDate.of(1990, 1, 1));
 
         User user = mapper.toUser(dto);
 
@@ -36,6 +33,6 @@ class IUserRequestMapperTest {
         assertEquals("3216549870", user.getPhoneNumber().getValue());
         assertEquals("1093854586", user.getIdentityNumber().getValue());
         assertEquals("supersegura", user.getPassword());
-        assertEquals(LocalDate.of(1990, 1, 1), user.getDateOfBirth());
-    }
+   }
+
 }
