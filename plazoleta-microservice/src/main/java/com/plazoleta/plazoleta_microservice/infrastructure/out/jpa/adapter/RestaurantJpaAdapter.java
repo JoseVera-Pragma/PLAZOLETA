@@ -7,6 +7,8 @@ import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.Restau
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IRestaurantEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IRestaurantRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,5 +34,10 @@ public class RestaurantJpaAdapter implements IRestaurantPersistencePort {
         return restaurantEntityMapper.toRestaurant(restaurantRepository.findById(id).orElseThrow(()->
                 new RestaurantNotFoundException("Restaurant with ID " + id + " not found")
         ));
+    }
+
+    @Override
+    public Page<Restaurant> findAll(Pageable pageable) {
+        return restaurantRepository.findAll(pageable).map(restaurantEntityMapper::toRestaurant);
     }
 }
