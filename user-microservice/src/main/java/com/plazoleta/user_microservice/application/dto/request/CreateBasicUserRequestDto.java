@@ -2,15 +2,15 @@ package com.plazoleta.user_microservice.application.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class UserRequestDto {
+@SuperBuilder
+public class CreateBasicUserRequestDto {
 
     @NotBlank(message = "First name is required")
     private String firstName;
@@ -26,10 +26,6 @@ public class UserRequestDto {
     @Size(max = 13, message = "Phone number is extensive max 13 characters")
     @Pattern(regexp = "^\\+?\\d+$", message = "Phone number is not valid")
     private String phoneNumber;
-
-    @NotNull(message = "Date of Birth is required")
-    @Past(message = "Date of birth is not valid")
-    private LocalDate dateOfBirth;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email is not valid")
