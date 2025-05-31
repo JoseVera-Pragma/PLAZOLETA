@@ -25,7 +25,7 @@ public class AuthController {
     private final IAuthServicePort authServicePort;
     private final IAuthRequestMapper authRequestMapper;
 
-    @Operation(summary = "Authenticate user")
+    @Operation(summary = "Authenticarse", description = "Se autentica el usuario y devuelve el token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User authenticated successfully",
                     content = @Content(mediaType = "application/json",
