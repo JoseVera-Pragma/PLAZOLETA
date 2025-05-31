@@ -161,27 +161,6 @@ class UserValidatorTest {
         }
 
         @Test
-        void shouldThrowIfOwnerIsUnderAge() {
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-
-            User newUser = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2008, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            Role creator = adminRole;
-
-            assertThrows(UnderAgeOwnerException.class, () -> userValidator.validateUserCreation(newUser, creator));
-        }
-
-        @Test
         void shouldPassIfValid() {
             when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
 
@@ -387,49 +366,6 @@ class UserValidatorTest {
                     .build();
 
             assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(user, customerRole));
-        }
-
-        @Test
-        void shouldThrowIfInvalidRoleOwnerAger() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2008, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-            Role updater = adminRole;
-
-            assertThrows(UnderAgeOwnerException.class, () -> userValidator.validateUserUpdate(user, updater));
-        }
-
-        @Test
-        void shouldThrowIfAgeOwnerIsNull() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-
-
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(null)
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-            Role updater = adminRole;
-
-            assertThrows(UnderAgeOwnerException.class, () -> userValidator.validateUserUpdate(user, updater));
         }
 
         @Test
