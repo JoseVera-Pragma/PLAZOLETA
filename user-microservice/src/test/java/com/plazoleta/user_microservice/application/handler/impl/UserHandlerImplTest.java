@@ -1,8 +1,10 @@
 package com.plazoleta.user_microservice.application.handler.impl;
 
+import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.UserRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IAuthenticatedUserHandler;
+import com.plazoleta.user_microservice.application.mapper.ICreateEmployedRequest;
 import com.plazoleta.user_microservice.application.mapper.IUserRequestMapper;
 import com.plazoleta.user_microservice.application.mapper.IUserResponseMapper;
 import com.plazoleta.user_microservice.domain.api.IRoleServicePort;
@@ -43,6 +45,9 @@ class UserHandlerImplTest {
 
     @Mock
     private IAuthenticatedUserHandler authenticatedUserHandler;
+
+    @Mock
+    private ICreateEmployedRequest iCreateEmployedRequest;
 
     @InjectMocks
     private UserHandlerImpl userHandler;
@@ -98,6 +103,43 @@ class UserHandlerImplTest {
         when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(ownerRole);
 
         assertThrows(IllegalArgumentException.class,()-> userHandler.createUser(requestDto));
+    }
+
+    @Test
+    void testCreateEmployed_WhenAdminCreates_ShouldAssignOwnerRole() {
+        CreateEmployedRequestDto requestDto = new CreateEmployedRequestDto();
+        requestDto.setFirstName("First");
+        requestDto.setLastName("Last");
+        requestDto.setIdentityNumber("1234567890");
+        requestDto.setPhoneNumber("+573111111111");
+        requestDto.setEmail("owner@example.com");
+        requestDto.setPassword("plainPassword");
+
+        User user = User.builder()
+                .firstName("First")
+                .lastName("Last")
+                .identityNumber(new IdentityNumber("1234567890"))
+                .phoneNumber(new PhoneNumber("+573111111111"))
+                .dateOfBirth(LocalDate.of(2000, 1, 1))
+                .email(new Email("owner@example.com"))
+                .password("plainPassword")
+                .build();
+
+        Role adminRole = new Role(1L, RoleList.ROLE_ADMIN, "Administrador");
+        Role ownerRole = new Role(2L, RoleList.ROLE_OWNER, "Propietario");
+
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn(Optional.of("ROLE_ADMIN"));
+        when(iCreateEmployedRequest.toUser(requestDto)).thenReturn(user);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(adminRole);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(ownerRole);
+        when(passwordEncoder.encode("plainPassword")).thenReturn("encodedPassword");
+
+        userHandler.createEmployed(requestDto);
+
+        assertEquals("encodedPassword", user.getPassword());
+        assertEquals(ownerRole, user.getRole());
+
+        verify(userServicePort).saveUser(user, adminRole);
     }
 
     @Test
@@ -180,6 +222,24 @@ class UserHandlerImplTest {
         userHandler.deleteUser(userId);
 
         verify(userServicePort).deleteUser(userId,adminRole);
+    }
+
+    @Test
+    void testCreateEmployed_WhenCreatorHasInvalidRole_ShouldThrowException() {
+        CreateEmployedRequestDto createEmployedRequestDto = new CreateEmployedRequestDto();
+        createEmployedRequestDto.setFirstName("First");
+        createEmployedRequestDto.setLastName("Last");
+        createEmployedRequestDto.setIdentityNumber("1231321322");
+        createEmployedRequestDto.setPhoneNumber("+573111551451");
+        createEmployedRequestDto.setEmail("owner@test.com");
+        createEmployedRequestDto.setPassword("password");
+
+        Role invalidRole = new Role(99L, RoleList.ROLE_EMPLOYED, "Empleado");
+        when(authenticatedUserHandler.getCurrentUserRole()).thenReturn("ROLE_EMPLOYED".describeConstable());
+        when(iCreateEmployedRequest.toUser(createEmployedRequestDto)).thenReturn(user);
+        when(roleServicePort.getRoleByName(RoleList.ROLE_EMPLOYED)).thenReturn(invalidRole);
+
+        assertThrows(IllegalArgumentException.class, () -> userHandler.createEmployed(createEmployedRequestDto));
     }
 
 }
