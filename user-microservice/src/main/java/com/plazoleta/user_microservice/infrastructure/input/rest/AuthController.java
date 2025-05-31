@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Autenticación", description = "Operaciones relacionadas con el inicio de sesión y validación de tokens.")
 public class AuthController {
 
     private final IAuthServicePort authServicePort;
@@ -42,7 +44,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Validate JWT token")
+    @Operation(summary = "Validar token JWT", description = "Valida un token JWT y retorna true si es válido.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token válido o inválido",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Boolean.class)))
+    })
     @PostMapping("/validate")
     public ResponseEntity<Boolean> validateToken(@RequestParam String token) {
         boolean isValid = authServicePort.validateToken(token);
