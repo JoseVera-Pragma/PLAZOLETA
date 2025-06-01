@@ -10,6 +10,7 @@ import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandl
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -95,7 +96,7 @@ public class RestaurantController {
     }
 
     @Operation(
-            summary = "Listar restaurantes paginados y ordenados alfabéticamente",
+            summary = "Listar restaurantes paginados y ordenados alfabéticamente (Solo el rol de cliente)",
             description = "Devuelve una lista paginada de restaurantes con su nombre y logo, ordenados por nombre ascendente.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Lista obtenida correctamente"),
@@ -103,6 +104,7 @@ public class RestaurantController {
                     @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
             }
     )
+    @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping
     public Page<RestaurantResumeResponseDto> getRestaurants(
             @Parameter(description = "Número de página (inicia en 0)", example = "0")
@@ -112,5 +114,34 @@ public class RestaurantController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return restaurantHandler.restaurantList(page, size);
+    }
+
+    @Operation(
+            summary = "Listar platos por restaurante y categoría (paginado) (Solo el rol de cliente)",
+            description = "Este endpoint permite obtener una lista paginada de platos asociados a un restaurante específico y filtrados por el nombre de una categoría determinada. "
+                    + "Los resultados se ordenan alfabéticamente por el nombre del plato.",
+            parameters = {
+                    @Parameter(name = "restaurantId", description = "ID del restaurante", required = true, example = "1"),
+                    @Parameter(name = "categoryId", description = "ID de la categoría", required = true, example = "3"),
+                    @Parameter(name = "page", description = "Número de página (comienza en 0)", example = "0"),
+                    @Parameter(name = "size", description = "Cantidad de elementos por página", example = "10")
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Lista de platos obtenida correctamente",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = DishResponseDto.class))),
+                    @ApiResponse(responseCode = "404", description = "No se encontraron platos con los criterios especificados", content = @Content),
+                    @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
+            }
+    )
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/{restaurantId}/category/{categoryId}")
+    public Page<DishResponseDto> getDishesByCategory(
+            @PathVariable Long restaurantId,
+            @PathVariable Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return dishHandler.getDishesByRestaurantAndCategory(restaurantId, categoryId, page, size);
     }
 }
