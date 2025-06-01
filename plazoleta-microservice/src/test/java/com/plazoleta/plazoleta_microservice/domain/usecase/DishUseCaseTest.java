@@ -15,7 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -484,5 +489,48 @@ class DishUseCaseTest {
         assertEquals(existingDish.getDescription(), captured.getDescription());
         assertEquals(existingDish.getRestaurantId(), captured.getRestaurantId());
         assertEquals(existingDish.getCategory(), captured.getCategory());
+    }
+
+    @Test
+    void testFindAllByRestaurantIdAndCategoryId() {
+        Long restaurantId = 1L;
+        Long categoryId = 2L;
+        Pageable pageable = PageRequest.of(0, 2);
+
+        Dish dish1 = Dish.builder()
+                .id(10L)
+                .name("Pizza")
+                .price(20.0)
+                .description("Delicious pizza")
+                .imageUrl("http://pizza.com/img.png")
+                .category(new Category(categoryId, "Fast Food","Food"))
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+        Dish dish2 = Dish.builder()
+                .id(11L)
+                .name("Burger")
+                .price(15.0)
+                .description("Juicy burger")
+                .imageUrl("http://burger.com/img.png")
+                .category(new Category(categoryId, "Fast Food","Food"))
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+        List<Dish> dishes = List.of(dish1, dish2);
+        Page<Dish> page = new PageImpl<>(dishes, pageable, dishes.size());
+
+        when(dishPersistencePort.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable))
+                .thenReturn(page);
+
+        Page<Dish> result = dishUseCase.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
+
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals("Pizza", result.getContent().get(0).getName());
+
+        verify(dishPersistencePort).findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
     }
 }
