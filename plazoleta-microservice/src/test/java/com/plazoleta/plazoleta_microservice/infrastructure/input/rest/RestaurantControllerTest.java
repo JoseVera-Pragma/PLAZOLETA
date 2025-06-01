@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -191,6 +193,7 @@ class RestaurantControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "CUSTOMER")
     void shouldReturnPaginatedRestaurantsList() throws Exception {
         int page = 0;
         int size = 2;
@@ -215,5 +218,54 @@ class RestaurantControllerTest {
                 .andExpect(jsonPath("$.content[1].urlLogo").value("logoB"));
 
         verify(restaurantHandler).restaurantList(page, size);
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void testGetDishesByCategory_shouldReturnPagedDishes() throws Exception {
+        Long restaurantId = 1L;
+        Long categoryId = 3L;
+        int page = 0;
+        int size = 2;
+
+        DishResponseDto dish1 = DishResponseDto.builder()
+                .id(101L)
+                .name("Taco")
+                .description("Delicioso taco mexicano")
+                .price(10.5)
+                .imageUrl("http://img.com/taco.jpg")
+                .categoryName("Mexicana")
+                .active(true)
+                .restaurantId(restaurantId)
+                .build();
+
+        DishResponseDto dish2 = DishResponseDto.builder()
+                .id(102L)
+                .name("Burrito")
+                .description("Clásico burrito")
+                .price(12.0)
+                .imageUrl("http://img.com/burrito.jpg")
+                .categoryName("Mexicana")
+                .active(true)
+                .restaurantId(restaurantId)
+                .build();
+
+        List<DishResponseDto> dtoList = List.of(dish1, dish2);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<DishResponseDto> pagedResponse = new PageImpl<>(dtoList, pageable, dtoList.size());
+
+        when(dishHandler.getDishesByRestaurantAndCategory(restaurantId, categoryId, page, size))
+                .thenReturn(pagedResponse);
+
+        mockMvc.perform(get("/restaurants/{restaurantId}/category/{categoryId}", restaurantId, categoryId)
+                        .param("page", String.valueOf(page))
+                        .param("size", String.valueOf(size))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].name").value("Taco"))
+                .andExpect(jsonPath("$.content[1].name").value("Burrito"));
+
+        verify(dishHandler).getDishesByRestaurantAndCategory(restaurantId, categoryId, page, size);
     }
 }

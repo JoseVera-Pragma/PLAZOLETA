@@ -8,14 +8,13 @@ import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePor
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.CategoryEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IRestaurantEntityMapperImpl;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -58,7 +57,7 @@ class DishPersistenceAdapterIntegrationTest {
         testDish.setName("Original Dish");
         testDish.setDescription("Original description");
         testDish.setPrice(10.0);
-        testDish.setRestaurantId(testRestaurant);
+        testDish.setRestaurant(testRestaurant);
         testDish.setCategory(testCategory);
         testDish.setImageUrl("original.jpg");
         testDish.setImageUrl("dfas");
@@ -72,7 +71,7 @@ class DishPersistenceAdapterIntegrationTest {
                 .name(testDish.getName())
                 .description("Updated description")
                 .price(15.0)
-                .restaurantId(testDish.getRestaurantId().getId())
+                .restaurantId(testDish.getRestaurant().getId())
                 .category(new Category(testCategory.getId(),testCategory.getName(),testCategory.getDescription()))
                 .imageUrl(testDish.getImageUrl())
                 .build();
