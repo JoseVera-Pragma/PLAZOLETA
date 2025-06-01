@@ -19,6 +19,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
+import org.springframework.data.domain.*;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -335,5 +338,79 @@ class DishHandlerImplTest {
 
         verify(authenticatedUserHandler).getCurrentUserId();
         verify(dishServicePort).changeDishStatus(userId, dishId, activate);
+    }
+
+    @Test
+    void testGetDishesByRestaurantAndCategory() {
+        Long restaurantId = 1L;
+        Long categoryId = 2L;
+        int page = 0;
+        int size = 2;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+
+        Dish dish1 = Dish.builder()
+                .id(1L)
+                .name("Pizza")
+                .price(10.0)
+                .description("Cheese pizza")
+                .imageUrl("http://pizza.com/pizza.jpg")
+                .restaurantId(restaurantId)
+                .category(new Category(categoryId, "Fast Food","Fast"))
+                .active(true)
+                .build();
+
+        Dish dish2 = Dish.builder()
+                .id(2L)
+                .name("Burger")
+                .price(8.0)
+                .description("Beef burger")
+                .imageUrl("http://burger.com/burger.jpg")
+                .restaurantId(restaurantId)
+                .category(new Category(categoryId, "Fast Food","Fast"))
+                .active(true)
+                .build();
+
+        List<Dish> dishList = List.of(dish1, dish2);
+        Page<Dish> dishPage = new PageImpl<>(dishList, pageable, dishList.size());
+
+        DishResponseDto dto1 = DishResponseDto.builder()
+                .id(dish1.getId())
+                .name(dish1.getName())
+                .description(dish1.getDescription())
+                .price(dish1.getPrice())
+                .imageUrl(dish1.getImageUrl())
+                .categoryName(dish1.getCategory().getName())
+                .active(dish1.isActive())
+                .restaurantId(dish1.getRestaurantId())
+                .build();
+
+        DishResponseDto dto2 = DishResponseDto.builder()
+                .id(dish2.getId())
+                .name(dish2.getName())
+                .description(dish2.getDescription())
+                .price(dish2.getPrice())
+                .imageUrl(dish2.getImageUrl())
+                .categoryName(dish2.getCategory().getName())
+                .active(dish2.isActive())
+                .restaurantId(dish2.getRestaurantId())
+                .build();
+
+        List<DishResponseDto> dtoList = List.of(dto1, dto2);
+
+        when(categoryServicePort.getCategoryById(categoryId)).thenReturn(new Category(categoryId, "Fast Food","Fast"));
+        when(dishServicePort.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable)).thenReturn(dishPage);
+        when(dishResponseMapper.toDishResponseList(dishList)).thenReturn(dtoList);
+
+        Page<DishResponseDto> result = dishHandler.getDishesByRestaurantAndCategory(restaurantId, categoryId, page, size);
+
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals("Pizza", result.getContent().get(0).getName());
+        assertEquals("Burger", result.getContent().get(1).getName());
+
+        verify(categoryServicePort).getCategoryById(categoryId);
+        verify(dishServicePort).findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
+        verify(dishResponseMapper).toDishResponseList(dishList);
     }
 }
