@@ -6,6 +6,8 @@ import com.plazoleta.plazoleta_microservice.domain.spi.IDishPersistencePort;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IDishEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,4 +33,9 @@ public class DishJpaAdapter implements IDishPersistencePort {
                 .orElseThrow(() -> new DishNotFoundException("Dish not found with id: " + id));
     }
 
+    @Override
+    public Page<Dish> findAllByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, Pageable pageable) {
+        return dishRepository.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable)
+                .map(dishEntityMapper::toModel);
+    }
 }
