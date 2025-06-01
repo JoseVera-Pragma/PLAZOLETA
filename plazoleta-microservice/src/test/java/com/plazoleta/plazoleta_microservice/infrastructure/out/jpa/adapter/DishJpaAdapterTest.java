@@ -3,7 +3,9 @@ package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.CategoryEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IDishEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
 import org.junit.jupiter.api.Test;
@@ -11,7 +13,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,7 +38,7 @@ class DishJpaAdapterTest {
 
     @Test
     void saveDish_ShouldReturnSavedDish() {
-        Category category = new Category(1L,"test","test");
+        Category category = new Category(1L, "test", "test");
 
         Dish dish = Dish.builder()
                 .id(1L)
@@ -127,5 +134,79 @@ class DishJpaAdapterTest {
         verify(dishEntityMapper, never()).toModel(any(DishEntity.class));
     }
 
+    @Test
+    void testFindAllByRestaurantIdAndCategoryId() {
+        Long restaurantId = 1L;
+        Long categoryId = 2L;
+        Pageable pageable = PageRequest.of(0, 2);
 
+        RestaurantEntity restaurantEntity = new RestaurantEntity();
+        restaurantEntity.setId(restaurantId);
+
+        CategoryEntity categoryEntity = new CategoryEntity();
+        categoryEntity.setId(categoryId);
+        categoryEntity.setName("Comida Rápida");
+        categoryEntity.setDescription("Comida Rápida");
+
+        DishEntity entity1 = new DishEntity();
+        entity1.setId(10L);
+        entity1.setName("Hamburguesa");
+        entity1.setPrice(15000.0);
+        entity1.setDescription("Clásica con queso");
+        entity1.setImageUrl("http://img.com/hamburguesa.jpg");
+        entity1.setActive(true);
+        entity1.setCategory(categoryEntity);
+        entity1.setRestaurant(restaurantEntity);
+
+        DishEntity entity2 = new DishEntity();
+        entity2.setId(11L);
+        entity2.setName("Perro Caliente");
+        entity2.setPrice(12000.0);
+        entity2.setDescription("Con tocineta");
+        entity2.setImageUrl("http://img.com/perro.jpg");
+        entity2.setActive(true);
+        entity2.setCategory(categoryEntity);
+        entity2.setRestaurant(restaurantEntity);
+
+        List<DishEntity> entityList = List.of(entity1, entity2);
+        Page<DishEntity> entityPage = new PageImpl<>(entityList, pageable, entityList.size());
+
+        Dish dish1 = Dish.builder()
+                .id(10L)
+                .name("Hamburguesa")
+                .price(15000.0)
+                .description("Clásica con queso")
+                .imageUrl("http://img.com/hamburguesa.jpg")
+                .category(new Category(categoryId, "Comida Rápida", "Comida Rápida"))
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+        Dish dish2 = Dish.builder()
+                .id(11L)
+                .name("Perro Caliente")
+                .price(12000.0)
+                .description("Con tocineta")
+                .imageUrl("http://img.com/perro.jpg")
+                .category(new Category(categoryId, "Comida Rápida", "Comida Rápida"))
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+        when(dishRepository.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable))
+                .thenReturn(entityPage);
+
+        when(dishEntityMapper.toModel(entity1)).thenReturn(dish1);
+        when(dishEntityMapper.toModel(entity2)).thenReturn(dish2);
+
+        Page<Dish> result = dishJpaAdapter.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
+
+        assertEquals(2, result.getContent().size());
+        assertEquals("Hamburguesa", result.getContent().get(0).getName());
+        assertEquals("Perro Caliente", result.getContent().get(1).getName());
+
+        verify(dishRepository).findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
+        verify(dishEntityMapper).toModel(entity1);
+        verify(dishEntityMapper).toModel(entity2);
+    }
 }
