@@ -34,7 +34,7 @@ public class DishEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_restaurante", nullable = false)
-    private RestaurantEntity restaurantId;
+    private RestaurantEntity restaurant;
 
     @Column(name = "url_imagen", nullable = false)
     private String imageUrl;
