@@ -13,8 +13,11 @@ import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundEx
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -73,5 +76,17 @@ public class DishHandlerImpl implements IDishHandler {
     public void changeDishStatus(Long dishId, boolean activate) {
         Long userId = authenticatedUserHandler.getCurrentUserId();
         dishServicePort.changeDishStatus(userId, dishId, activate);
+    }
+
+    @Override
+    public Page<DishResponseDto> getDishesByRestaurantAndCategory(Long restaurantId, Long categoryId, int page, int size) {
+        categoryServicePort.getCategoryById(categoryId);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+
+        Page<Dish> dishPage = dishServicePort.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
+
+        List<DishResponseDto> dtos = dishResponseMapper.toDishResponseList(dishPage.getContent());
+
+        return new PageImpl<>(dtos, pageable, dishPage.getTotalElements());
     }
 }
