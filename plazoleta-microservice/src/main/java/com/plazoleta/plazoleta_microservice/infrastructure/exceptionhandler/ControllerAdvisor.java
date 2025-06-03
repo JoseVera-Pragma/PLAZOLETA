@@ -7,6 +7,8 @@ import com.plazoleta.plazoleta_microservice.domain.exception.category.InvalidCat
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDataException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.*;
+import com.plazoleta.plazoleta_microservice.infrastructure.exception.CustomerHasActiveOrderException;
+import com.plazoleta.plazoleta_microservice.infrastructure.exception.DishesNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -63,8 +65,19 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(DishesNotFoundException.class)
+    public ResponseEntity<ApiError> handleDishesNotFound(RuntimeException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(CustomerHasActiveOrderException.class)
+    public ResponseEntity<String> handleCustomerHasActiveOrderException(CustomerHasActiveOrderException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
     @ExceptionHandler({DuplicateNitException.class, CategoryAlreadyExistsException.class, CategoryInUseException.class, DataAccessException.class})
     public ResponseEntity<ApiError> handleDuplicateDomainExceptions(RuntimeException ex, HttpServletRequest request) {
+        System.err.println(ex);
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
