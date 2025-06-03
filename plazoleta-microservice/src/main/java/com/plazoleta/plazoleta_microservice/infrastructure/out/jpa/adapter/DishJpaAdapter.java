@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -44,6 +43,6 @@ public class DishJpaAdapter implements IDishPersistencePort {
 
     @Override
     public List<Dish> getDishesByRestaurantId(Long restaurantId) {
-        return dishRepository.findByRestaurantId(restaurantId).stream().map(dishEntityMapper::toModel).collect(Collectors.toList());
+        return dishRepository.findByRestaurantId(restaurantId).stream().map(dishEntityMapper::toModel).toList();
     }
 }

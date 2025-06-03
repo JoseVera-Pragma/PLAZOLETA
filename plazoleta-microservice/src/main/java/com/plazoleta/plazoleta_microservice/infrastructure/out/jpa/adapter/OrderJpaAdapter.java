@@ -13,11 +13,13 @@ import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.ID
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderRepository;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IRestaurantRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -57,16 +59,25 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
     public List<Order> getOrdersByCustomerId(Long customerId) {
         return orderRepository.findByCustomerId(customerId).stream()
                 .map(orderEntityMapper::toDomain)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public boolean customerHasOrdersInProcess(Long customerId) {
-        List<OrderStatus> orderInProcces = new ArrayList<>(
+        List<OrderStatus> orderInProcess = new ArrayList<>(
                 List.of(OrderStatus.PENDING, OrderStatus.IN_PREPARATION, OrderStatus.READY)
         );
 
-        return orderRepository.existsByCustomerIdAndStatusIn(customerId, orderInProcces);
+        return orderRepository.existsByCustomerIdAndStatusIn(customerId, orderInProcess);
 
+    }
+
+    @Override
+    public List<Order> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage) {
+        Page<OrderEntity> orderPage = orderRepository.findAllByRestaurantIdAndStatus(restaurantId, status, PageRequest.of(pageIndex, elementsPerPage, Sort.by(Sort.Direction.ASC, "orderDate")));
+
+        return orderPage.getContent().stream()
+                .map(orderEntityMapper::toDomain)
+                .toList();
     }
 }
