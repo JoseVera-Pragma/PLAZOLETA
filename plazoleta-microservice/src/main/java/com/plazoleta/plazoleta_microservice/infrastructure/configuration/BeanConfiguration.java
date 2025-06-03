@@ -46,11 +46,12 @@ public class BeanConfiguration {
     private final IUserFeignClient userFeignClient;
     private final IRestaurantRequestMapper restaurantRequestMapper;
     private final IRestaurantResponseMapper restaurantResponseMapper;
-    private final IRestauranteResumenResponseMapper restauranteResumenResponseMapper;
+    private final IRestauranteResumenResponseMapper restaurantResumeResponseMapper;
     private final IDishRequestMapper dishRequestMapper;
     private final IDishResponseMapper dishResponseMapper;
     private final ICategoryRequestMapper categoryRequestMapper;
     private final ICategoryResponseMapper categoryResponseMapper;
+    private final IOrderResponseMapper orderResponseMapper;
     private final AuthenticatedUserHandlerImpl authenticatedUserHandler;
     private final IOrderRepository orderRepository;
 
@@ -72,7 +73,7 @@ public class BeanConfiguration {
 
     @Bean
     public IRestaurantHandler restaurantHandler(IRestaurantServicePort restaurantServicePort) {
-        return new RestaurantHandlerImpl(restaurantServicePort, restaurantRequestMapper, restaurantResponseMapper, restauranteResumenResponseMapper);
+        return new RestaurantHandlerImpl(restaurantServicePort, restaurantRequestMapper, restaurantResponseMapper, restaurantResumeResponseMapper);
     }
 
     @Bean
@@ -107,7 +108,7 @@ public class BeanConfiguration {
 
     @Bean
     public OrderEntityMapper orderEntityMapper() {
-        return new OrderEntityMapper(dishEntityMapper);
+        return new OrderEntityMapper();
     }
 
     @Bean
@@ -127,7 +128,7 @@ public class BeanConfiguration {
 
     @Bean
     public IOrderHandler orderHandler(IOrderServicePort orderServicePort) {
-        return new OrderHandlerImpl(orderServicePort,authenticatedUserHandler, orderRequestMapper());
+        return new OrderHandlerImpl(orderServicePort, authenticatedUserHandler, orderRequestMapper(), orderResponseMapper);
     }
 
 }
