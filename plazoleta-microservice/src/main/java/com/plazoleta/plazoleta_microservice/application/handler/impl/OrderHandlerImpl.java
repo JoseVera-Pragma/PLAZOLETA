@@ -41,4 +41,10 @@ public class OrderHandlerImpl implements IOrderHandler {
     public List<OrderResponseDto> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage) {
         return orderResponseMapper.toResponsesDto(orderServicePort.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage));
     }
+
+    @Override
+    public void assignOrder(Long orderId) {
+        Long employedId = authenticatedUserHandler.getCurrentUserId();
+        orderServicePort.assignOrder(orderId, employedId);
+    }
 }

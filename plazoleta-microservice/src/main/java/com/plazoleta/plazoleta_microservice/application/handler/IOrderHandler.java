@@ -10,4 +10,6 @@ public interface IOrderHandler {
     void createOrder(CreateOrderRequestDto createOrderRequestDto);
 
     List<OrderResponseDto> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
+
+    void assignOrder(Long orderId);
 }
