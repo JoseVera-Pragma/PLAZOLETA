@@ -60,6 +60,14 @@ public class OrderUseCase implements IOrderServicePort {
         return orderPersistencePort.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
     }
 
+    @Override
+    public void assignOrder(Long orderId, Long employedId) {
+        Order order = orderPersistencePort.getOrderById(orderId);
+        order.setChefId(employedId);
+        order.setStatus(OrderStatus.IN_PREPARATION);
+        orderPersistencePort.updateOrder(order);
+    }
+
     private void validateAllDishesFromSameRestaurant(List<OrderDish> dishes, Long restaurantId) {
         for (OrderDish dishItem : dishes) {
             Dish dish = dishPersistencePort.getById(dishItem.getDishId());
@@ -68,4 +76,6 @@ public class OrderUseCase implements IOrderServicePort {
             }
         }
     }
+
+
 }
