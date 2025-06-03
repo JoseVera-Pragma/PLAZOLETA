@@ -5,19 +5,13 @@ import com.plazoleta.plazoleta_microservice.domain.model.OrderDish;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class OrderEntityMapper {
-    private final IDishEntityMapper dishEntityMapper;
-
-    public OrderEntityMapper(IDishEntityMapper dishEntityMapper) {
-        this.dishEntityMapper = dishEntityMapper;
-    }
 
     public Order toDomain(OrderEntity entity) {
         List<OrderDish> dishes = entity.getDishes().stream()
                 .map(this::toDomainDish)
-                .collect(Collectors.toList());
+                .toList();
 
         return new Order(
                 entity.getId(),
@@ -41,7 +35,7 @@ public class OrderEntityMapper {
 
         List<OrderDishEntity> dishEntitiesMapped = domain.getDishes().stream()
                 .map(d -> toEntityDish(d, entity, findDishEntityById(dishEntities, d.getDishId())))
-                .collect(Collectors.toList());
+                .toList();
 
         entity.setDishes(dishEntitiesMapped);
         return entity;
