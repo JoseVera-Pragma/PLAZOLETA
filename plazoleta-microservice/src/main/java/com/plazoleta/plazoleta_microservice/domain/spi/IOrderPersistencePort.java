@@ -17,4 +17,5 @@ public interface IOrderPersistencePort {
 
     List<Order> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
 
+    void updateOrder(Order order);
 }

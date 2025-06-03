@@ -14,4 +14,6 @@ public interface IOrderServicePort {
     Order getOrderById(Long orderId);
 
     List<Order> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
+
+    void assignOrder(Long orderId, Long employedId);
 }
