@@ -14,6 +14,8 @@ import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePor
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public class DishUseCase implements IDishServicePort {
     private final IDishPersistencePort dishPersistencePort;
     private final IRestaurantPersistencePort restaurantPersistencePort;
@@ -118,5 +120,10 @@ public class DishUseCase implements IDishServicePort {
     @Override
     public Page<Dish> findAllByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, Pageable pageable) {
         return dishPersistencePort.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
+    }
+
+    @Override
+    public List<Dish> getDishesByRestaurantId(Long restaurantId) {
+        return dishPersistencePort.getDishesByRestaurantId(restaurantId);
     }
 }
