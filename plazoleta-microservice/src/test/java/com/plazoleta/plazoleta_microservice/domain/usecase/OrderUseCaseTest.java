@@ -155,4 +155,21 @@ class OrderUseCaseTest {
         verify(restaurantPersistencePort).getById(restaurantId);
         verify(orderPersistencePort).getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
     }
+
+    @Test
+    void assignOrder_ShouldAssignChefAndChangeStatus() {
+        Long orderId = 1L;
+        Long employedId = 10L;
+        Order order = new Order();
+        order.setId(orderId);
+        order.setStatus(OrderStatus.PENDING);
+
+        when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+
+        orderUseCase.assignOrder(orderId, employedId);
+
+        assertEquals(employedId, order.getChefId());
+        assertEquals(OrderStatus.IN_PREPARATION, order.getStatus());
+        verify(orderPersistencePort).updateOrder(order);
+    }
 }
