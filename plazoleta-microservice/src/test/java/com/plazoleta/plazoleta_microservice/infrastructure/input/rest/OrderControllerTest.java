@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -77,5 +77,27 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].status").value("PENDING"))
                 .andExpect(jsonPath("$[0].statusDescription").value("Pendiente"));
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYED")
+    void assignOrderToEmployed_ShouldReturnNoContent() throws Exception {
+        Long orderId = 1L;
+
+        mockMvc.perform(patch("/orders/assign/{orderId}", orderId))
+                .andExpect(status().isNoContent());
+
+        verify(orderHandler).assignOrder(orderId);
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void assignOrderToEmployed_ShouldReturnForbidden_WhenRoleIsNotEmployed() throws Exception {
+        Long orderId = 1L;
+
+        mockMvc.perform(patch("/orders/assign/{orderId}", orderId))
+                .andExpect(status().isForbidden());
+
+        verify(orderHandler, never()).assignOrder(anyLong());
     }
 }
