@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.api;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
+import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 
 import java.util.List;
 
@@ -12,5 +13,5 @@ public interface IOrderServicePort {
 
     Order getOrderById(Long orderId);
 
-
+    List<Order> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
 }
