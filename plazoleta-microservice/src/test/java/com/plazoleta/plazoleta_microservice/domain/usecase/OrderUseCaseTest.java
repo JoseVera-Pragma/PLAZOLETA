@@ -124,4 +124,35 @@ class OrderUseCaseTest {
 
         assertEquals(order, result);
     }
+
+    @Test
+    void getOrdersByStatusAndRestaurantId_ShouldReturnOrdersList() {
+        Long restaurantId = 1L;
+        OrderStatus status = OrderStatus.PENDING;
+        int pageIndex = 0;
+        int elementsPerPage = 5;
+
+        Restaurant restaurant = new Restaurant.Builder()
+                .idOwner(1L)
+                .name("Valid Restaurant")
+                .nit("123456")
+                .address("Address")
+                .phoneNumber("+123456789")
+                .urlLogo("http://logo.url")
+                .build();
+        List<Order> expectedOrders = List.of(
+                new Order(), new Order()
+        );
+
+        when(restaurantPersistencePort.getById(restaurantId)).thenReturn(restaurant);
+
+        when(orderPersistencePort.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage))
+                .thenReturn(expectedOrders);
+
+        List<Order> result = orderUseCase.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
+
+        assertEquals(expectedOrders, result);
+        verify(restaurantPersistencePort).getById(restaurantId);
+        verify(orderPersistencePort).getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
+    }
 }
