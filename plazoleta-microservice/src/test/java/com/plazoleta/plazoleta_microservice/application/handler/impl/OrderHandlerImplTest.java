@@ -85,4 +85,17 @@ class OrderHandlerImplTest {
         verify(orderServicePort).getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
         verify(orderResponseMapper).toResponsesDto(orders);
     }
+
+    @Test
+    void assignOrder_ShouldCallAssignOrderWithAuthenticatedUserId() {
+        Long orderId = 1L;
+        Long employedId = 42L;
+
+        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(employedId);
+
+        orderHandler.assignOrder(orderId);
+
+        verify(authenticatedUserHandler).getCurrentUserId();
+        verify(orderServicePort).assignOrder(orderId, employedId);
+    }
 }
