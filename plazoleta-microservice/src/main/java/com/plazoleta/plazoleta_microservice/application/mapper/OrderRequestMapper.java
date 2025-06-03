@@ -5,14 +5,13 @@ import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderDish;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class OrderRequestMapper {
     public Order toDomain(CreateOrderRequestDto dto) {
         List<OrderDish> dishes = dto.getDishes()
                 .stream()
                 .map(d -> new OrderDish(d.getIdDish(), d.getQuantity()))
-                .collect(Collectors.toList());
+                .toList();
 
         return new Order(
                 null,
