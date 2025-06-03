@@ -1,14 +1,19 @@
 package com.plazoleta.plazoleta_microservice.application.handler.impl;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IAuthenticatedUserHandler;
 import com.plazoleta.plazoleta_microservice.application.handler.IOrderHandler;
+import com.plazoleta.plazoleta_microservice.application.mapper.IOrderResponseMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.OrderRequestMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
+import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +22,7 @@ public class OrderHandlerImpl implements IOrderHandler {
     private final IOrderServicePort orderServicePort;
     private final IAuthenticatedUserHandler authenticatedUserHandler;
     private final OrderRequestMapper orderRequestMapper;
+    private final IOrderResponseMapper orderResponseMapper;
 
     @Override
     public void createOrder(CreateOrderRequestDto createOrderRequestDto) {
@@ -29,5 +35,10 @@ public class OrderHandlerImpl implements IOrderHandler {
 
         orderServicePort.createOrder(order);
 
+    }
+
+    @Override
+    public List<OrderResponseDto> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage) {
+        return orderResponseMapper.toResponsesDto(orderServicePort.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage));
     }
 }
