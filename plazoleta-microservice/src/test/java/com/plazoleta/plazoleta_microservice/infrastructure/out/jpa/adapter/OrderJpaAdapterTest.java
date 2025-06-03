@@ -26,8 +26,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class OrderJpaAdapterTest {
 
@@ -182,5 +181,40 @@ class OrderJpaAdapterTest {
         verify(orderRepository).findAllByRestaurantIdAndStatus(eq(restaurantId), eq(status), any(PageRequest.class));
         verify(orderEntityMapper).toDomain(entity1);
         verify(orderEntityMapper).toDomain(entity2);
+    }
+
+    @Test
+    void updateOrder_ShouldUpdateChefIdAndStatus() {
+        Long orderId = 1L;
+        Long chefId = 10L;
+        OrderStatus status = OrderStatus.IN_PREPARATION;
+
+        Order order = new Order();
+        order.setId(orderId);
+        order.setChefId(chefId);
+        order.setStatus(status);
+
+        OrderEntity existingEntity = new OrderEntity();
+        existingEntity.setId(orderId);
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(existingEntity));
+
+        orderJpaAdapter.updateOrder(order);
+
+        assertEquals(chefId, existingEntity.getChefId());
+        assertEquals(status, existingEntity.getStatus());
+        verify(orderRepository).save(existingEntity);
+    }
+
+    @Test
+    void updateOrder_ShouldThrowException_WhenOrderNotFound() {
+        Long orderId = 1L;
+        Order order = new Order();
+        order.setId(orderId);
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () -> orderJpaAdapter.updateOrder(order));
+        verify(orderRepository, never()).save(any());
     }
 }
