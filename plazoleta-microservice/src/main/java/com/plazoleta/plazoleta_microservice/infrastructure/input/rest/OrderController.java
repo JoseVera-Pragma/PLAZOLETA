@@ -52,8 +52,7 @@ public class OrderController {
                     @ApiResponse(responseCode = "200", description = "Lista de pedidos devuelta exitosamente",
                             content = @Content(mediaType = "application/json",
                                     array = @ArraySchema(schema = @Schema(implementation = OrderResponseDto.class)))),
-                    @ApiResponse(responseCode = "404", description = "No se encontraron datos",
-                            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/Error")))})
+                    @ApiResponse(responseCode = "404", description = "No se encontraron datos")})
     @PreAuthorize("hasRole('EMPLOYED')")
     @GetMapping("/getOrdersByStatus/{restaurantId}/{status}/{page}/{pageSize}")
     public ResponseEntity<List<OrderResponseDto>> getOrdersByStatus(@PathVariable Long restaurantId,
@@ -61,5 +60,20 @@ public class OrderController {
                                                                     @PathVariable int page,
                                                                     @PathVariable int pageSize) {
         return ResponseEntity.ok(orderHandler.getOrdersByStatusAndRestaurantId(restaurantId, status, page, pageSize));
+    }
+
+    @Operation(summary = "Asignar una orden a un empleado",
+            description = "Asigna la orden al empleado autenticado y cambia el estado a 'En preparación'",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Orden asignada exitosamente"),
+                    @ApiResponse(responseCode = "404", description = "Orden no encontrada",
+                            content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/Error"))),
+                    @ApiResponse(responseCode = "403", description = "No autorizado para esta operación")
+            })
+    @PreAuthorize("hasRole('EMPLOYED')")
+    @PatchMapping("/assign/{orderId}")
+    public ResponseEntity<Void> assignOrderToEmployed(@PathVariable Long orderId) {
+        orderHandler.assignOrder(orderId);
+        return ResponseEntity.noContent().build();
     }
 }
