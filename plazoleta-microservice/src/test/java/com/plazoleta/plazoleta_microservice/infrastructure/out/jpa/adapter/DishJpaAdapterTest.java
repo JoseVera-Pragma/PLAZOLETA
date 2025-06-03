@@ -209,4 +209,51 @@ class DishJpaAdapterTest {
         verify(dishEntityMapper).toModel(entity1);
         verify(dishEntityMapper).toModel(entity2);
     }
+
+    @Test
+    void getDishesByRestaurantId_ShouldReturnMappedDishes() {
+        Long restaurantId = 1L;
+
+        DishEntity dishEntity1 = new DishEntity();
+        DishEntity dishEntity2 = new DishEntity();
+
+        List<DishEntity> entityList = List.of(dishEntity1, dishEntity2);
+
+        Dish dish1 = Dish.builder()
+                .id(10L)
+                .name("Hamburguesa")
+                .price(15000.0)
+                .description("Clásica con queso")
+                .imageUrl("http://img.com/hamburguesa.jpg")
+                .category(new Category(2L, "Comida Rápida", "Comida Rápida"))
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+        Dish dish2 = Dish.builder()
+                .id(11L)
+                .name("Perro Caliente")
+                .price(12000.0)
+                .description("Con tocineta")
+                .imageUrl("http://img.com/perro.jpg")
+                .category(new Category(2L, "Comida Rápida", "Comida Rápida"))
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+        when(dishRepository.findByRestaurantId(restaurantId)).thenReturn(entityList);
+        when(dishEntityMapper.toModel(dishEntity1)).thenReturn(dish1);
+        when(dishEntityMapper.toModel(dishEntity2)).thenReturn(dish2);
+
+        List<Dish> result = dishJpaAdapter.getDishesByRestaurantId(restaurantId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(dish1, result.get(0));
+        assertEquals(dish2, result.get(1));
+
+        verify(dishRepository).findByRestaurantId(restaurantId);
+        verify(dishEntityMapper).toModel(dishEntity1);
+        verify(dishEntityMapper).toModel(dishEntity2);
+    }
 }

@@ -24,7 +24,7 @@ class OrderEntityMapperTest {
     @BeforeEach
     void setup() {
         dishEntityMapper = mock(IDishEntityMapper.class);
-        orderEntityMapper = new OrderEntityMapper(dishEntityMapper);
+        orderEntityMapper = new OrderEntityMapper();
     }
 
 

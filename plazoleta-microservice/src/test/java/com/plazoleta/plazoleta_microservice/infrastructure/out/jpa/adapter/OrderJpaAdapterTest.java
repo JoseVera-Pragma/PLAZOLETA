@@ -16,14 +16,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -143,5 +145,42 @@ class OrderJpaAdapterTest {
 
         boolean result = orderJpaAdapter.customerHasOrdersInProcess(20L);
         assertFalse(result);
+    }
+
+    @Test
+    void getOrdersByStatusAndRestaurantId_ShouldReturnMappedOrders() {
+        Long restaurantId = 1L;
+        OrderStatus status = OrderStatus.PENDING;
+        int pageIndex = 0;
+        int elementsPerPage = 2;
+
+        OrderEntity entity1 = new OrderEntity();
+        OrderEntity entity2 = new OrderEntity();
+        List<OrderEntity> entityList = List.of(entity1, entity2);
+
+        Page<OrderEntity> orderPage = new PageImpl<>(entityList);
+
+        Order order1 = new Order();
+        Order order2 = new Order();
+
+        when(orderRepository.findAllByRestaurantIdAndStatus(
+                eq(restaurantId),
+                eq(status),
+                any(PageRequest.class))
+        ).thenReturn(orderPage);
+
+        when(orderEntityMapper.toDomain(entity1)).thenReturn(order1);
+        when(orderEntityMapper.toDomain(entity2)).thenReturn(order2);
+
+        List<Order> result = orderJpaAdapter.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(order1, result.get(0));
+        assertEquals(order2, result.get(1));
+
+        verify(orderRepository).findAllByRestaurantIdAndStatus(eq(restaurantId), eq(status), any(PageRequest.class));
+        verify(orderEntityMapper).toDomain(entity1);
+        verify(orderEntityMapper).toDomain(entity2);
     }
 }
