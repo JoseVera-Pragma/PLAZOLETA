@@ -14,4 +14,7 @@ public interface IDishRepository extends JpaRepository<DishEntity, Long> {
     boolean existsByCategoryId(Long categoryId);
 
     Page<DishEntity> findAllByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, Pageable pageable);
+
+
+    List<DishEntity> findByRestaurantId(Long restaurantId);
 }
