@@ -1,5 +1,6 @@
 package com.plazoleta.user_microservice.application.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -8,5 +9,7 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @NoArgsConstructor
 @SuperBuilder
-public class CreateEmployedRequestDto extends CreateBasicUserRequestDto {
+public class CreateEmployedRequestDto extends CreateUserRequestDto {
+    @NotNull(message = "Restaurant ID must be provided.")
+    private Long restaurantId;
 }

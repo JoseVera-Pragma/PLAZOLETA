@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @SuperBuilder
-public class CreateOwnerRequestDto extends CreateBasicUserRequestDto {
+public class CreateOwnerRequestDto extends CreateUserRequestDto {
 
     @NotNull(message = "Date of Birth is required")
     @Past(message = "Date of birth is not valid")

@@ -1,20 +1,15 @@
 package com.plazoleta.user_microservice.application.mapper;
 
-import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateUserRequestDto;
 import com.plazoleta.user_microservice.domain.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
-
-import java.util.List;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         unmappedSourcePolicy = ReportingPolicy.IGNORE)
-public interface IUserResponseMapper {
-
-    @Mapping(target = "role", source = "role.name")
-    UserResponseDto toUserResponseDto(User user);
-
-    List<UserResponseDto> toResponseDtoList(List<User> users);
+public interface ICreateUserMapper {
+    User toUser(CreateUserRequestDto createUserRequestDto);
 }

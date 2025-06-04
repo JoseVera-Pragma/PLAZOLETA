@@ -6,7 +6,6 @@ import com.plazoleta.user_microservice.application.handler.IRoleHandler;
 import com.plazoleta.user_microservice.application.mapper.IRoleRequestMapper;
 import com.plazoleta.user_microservice.application.mapper.IRoleResponseMapper;
 import com.plazoleta.user_microservice.domain.api.IRoleServicePort;
-import com.plazoleta.user_microservice.domain.exception.RoleNotFoundException;
 import com.plazoleta.user_microservice.domain.model.Role;
 import com.plazoleta.user_microservice.domain.model.RoleList;
 import lombok.RequiredArgsConstructor;
@@ -31,11 +30,6 @@ public class RoleHandlerImpl implements IRoleHandler {
     @Override
     public List<RoleResponseDto> getAllRoles() {
         List<Role> roleList = iRoleServicePort.getAllRoles();
-
-        if (roleList == null){
-            throw new RoleNotFoundException("No roles found in the system.");
-        }
-
         return iRoleResponseMapper.toRoleResponseDtoList(roleList);
     }
 
@@ -53,15 +47,11 @@ public class RoleHandlerImpl implements IRoleHandler {
 
     @Override
     public void updateRole(Long id, RoleRequestDto roleRequestDto) {
-        Role existingRole = iRoleServicePort.getRole(id);
-        existingRole.setName(RoleList.valueOf(roleRequestDto.getName()));
-        existingRole.setDescription(roleRequestDto.getDescription());
-        iRoleServicePort.updateRole(existingRole);
+        iRoleServicePort.updateRole(id, iRoleRequestMapper.toRole(roleRequestDto));
     }
 
     @Override
     public void deleteRole(Long id) {
-        iRoleServicePort.getRole(id);
         iRoleServicePort.deleteRole(id);
     }
 }

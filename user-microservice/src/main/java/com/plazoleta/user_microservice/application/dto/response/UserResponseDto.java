@@ -18,4 +18,5 @@ public class UserResponseDto {
     private String email;
     private String password;
     private String role;
+    private Long restaurantId;
 }
