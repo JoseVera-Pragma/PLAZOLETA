@@ -52,8 +52,8 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.CONFLICT, "Cannot delete: Role is assigned to one or more users.", request.getRequestURI());
     }
 
-    @ExceptionHandler(UnderAgeOwnerException.class)
-    public ResponseEntity<ApiError> handleUnderAgeOwner(UnderAgeOwnerException ex, HttpServletRequest request) {
+    @ExceptionHandler(UnderAgeException.class)
+    public ResponseEntity<ApiError> handleUnderAgeOwner(UnderAgeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 

@@ -1,8 +1,8 @@
 package com.plazoleta.user_microservice.infrastructure.input.rest;
 
-import com.plazoleta.user_microservice.application.dto.request.CreateBasicUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateOwnerRequestDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IUserHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,7 +28,7 @@ public class UserController {
     @Operation(summary = "Crear un usuario cliente (registro público)", description = "Crea un usuario con rol CLIENTE")
     @ApiResponse(responseCode = "201", description = "Usuario cliente creado correctamente")
     @PostMapping("/customers")
-    public ResponseEntity<Void> createCustomer(@Valid @RequestBody CreateBasicUserRequestDto createCustomerRequestDto) {
+    public ResponseEntity<Void> createCustomer(@Valid @RequestBody CreateUserRequestDto createCustomerRequestDto) {
         iUserHandler.createCustomer(createCustomerRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
