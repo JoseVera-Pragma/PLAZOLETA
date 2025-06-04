@@ -1,53 +1,21 @@
 package com.plazoleta.user_microservice.domain.model;
 
-import com.plazoleta.user_microservice.domain.exception.UnderAgeOwnerException;
-
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.Objects;
 
 public class User {
-    private Long id;
-    private String firstName;
-    private String lastName;
-    private IdentityNumber identityNumber;
-    private PhoneNumber phoneNumber;
-    private LocalDate dateOfBirth;
-    private Email email;
-    private String password;
-    private Role role;
+    private final Long id;
+    private final String firstName;
+    private final String lastName;
+    private final String identityNumber;
+    private final String phoneNumber;
+    private final LocalDate dateOfBirth;
+    private final String email;
+    private final String password;
+    private final Role role;
+    private final Long restaurantId;
 
     private User(Builder builder){
-        if (builder.firstName == null || builder.firstName.isBlank()) {
-            throw new IllegalArgumentException("First name is required");
-        }
-        if (builder.lastName == null || builder.lastName.isBlank()) {
-            throw new IllegalArgumentException("Last name is required");
-        }
-        if (builder.identityNumber == null) {
-            throw new IllegalArgumentException("Identity number is required");
-        }
-        if (builder.phoneNumber == null) {
-            throw new IllegalArgumentException("Phone number is required");
-        }
-        if (builder.email == null) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        if (builder.password == null || builder.password.isBlank()) {
-            throw new IllegalArgumentException("Password is required");
-        }
-        if (builder.role != null && builder.role.isOwner()) {
-            if (builder.dateOfBirth == null) {
-                throw new IllegalArgumentException("Date of birth is required");
-            }
-            LocalDate today = LocalDate.now();
-            Period age = Period.between(builder.dateOfBirth, today);
-
-            if (age.getYears() < 18) {
-                throw new UnderAgeOwnerException("User must be at least 18 years old to be an OWNER");
-            }
-        }
-
         this.id = builder.id;
         this.firstName = builder.firstName;
         this.lastName = builder.lastName;
@@ -57,6 +25,7 @@ public class User {
         this.phoneNumber = builder.phoneNumber;
         this.password = builder.password;
         this.role = builder.role;
+        this.restaurantId = builder.restaurantId;
     }
 
     public static Builder builder() {
@@ -67,72 +36,40 @@ public class User {
         return dateOfBirth;
     }
 
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public Email getEmail() {
+    public String getEmail() {
         return email;
-    }
-
-    public void setEmail(Email email) {
-        this.email = email;
     }
 
     public String getFirstName() {
         return firstName;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public IdentityNumber getIdentityNumber() {
+    public String getIdentityNumber() {
         return identityNumber;
-    }
-
-    public void setIdentityNumber(IdentityNumber identityNumber) {
-        this.identityNumber = identityNumber;
     }
 
     public String getLastName() {
         return lastName;
     }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public PhoneNumber getPhoneNumber() {
+    public String getPhoneNumber() {
         return phoneNumber;
-    }
-
-    public void setPhoneNumber(PhoneNumber phoneNumber) {
-        this.phoneNumber = phoneNumber;
     }
 
     public Role getRole() {
         return role;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
+    public Long getRestaurantId() {
+        return restaurantId;
     }
 
     @Override
@@ -152,12 +89,13 @@ public class User {
         private Long id;
         private String firstName;
         private String lastName;
-        private IdentityNumber identityNumber;
-        private PhoneNumber phoneNumber;
+        private String identityNumber;
+        private String phoneNumber;
         private LocalDate dateOfBirth;
-        private Email email;
+        private String email;
         private String password;
         private Role role;
+        private Long restaurantId;
 
         public Builder id(Long id) {
             this.id = id;
@@ -174,12 +112,12 @@ public class User {
             return this;
         }
 
-        public Builder identityNumber(IdentityNumber identityNumber) {
+        public Builder identityNumber(String identityNumber) {
             this.identityNumber = identityNumber;
             return this;
         }
 
-        public Builder phoneNumber(PhoneNumber phoneNumber) {
+        public Builder phoneNumber(String phoneNumber) {
             this.phoneNumber = phoneNumber;
             return this;
         }
@@ -189,7 +127,7 @@ public class User {
             return this;
         }
 
-        public Builder email(Email email) {
+        public Builder email(String email) {
             this.email = email;
             return this;
         }
@@ -204,8 +142,43 @@ public class User {
             return this;
         }
 
+        public Builder restaurantId(Long restaurantId) {
+            this.restaurantId = restaurantId;
+            return this;
+        }
+
         public User build() {
             return new User(this);
         }
+    }
+
+    public User withPasswordAndRole(String encryptedPassword, Role newRole) {
+        return User.builder()
+                .id(this.id)
+                .firstName(this.firstName)
+                .lastName(this.lastName)
+                .identityNumber(this.identityNumber)
+                .phoneNumber(this.phoneNumber)
+                .dateOfBirth(this.dateOfBirth)
+                .email(this.email)
+                .password(encryptedPassword)
+                .role(newRole)
+                .restaurantId(this.restaurantId)
+                .build();
+    }
+
+    public User withId(Long id) {
+        return User.builder()
+                .id(id)
+                .firstName(this.firstName)
+                .lastName(this.lastName)
+                .identityNumber(this.identityNumber)
+                .phoneNumber(this.phoneNumber)
+                .dateOfBirth(this.dateOfBirth)
+                .email(this.email)
+                .password(this.password)
+                .role(this.role)
+                .restaurantId(this.restaurantId)
+                .build();
     }
 }

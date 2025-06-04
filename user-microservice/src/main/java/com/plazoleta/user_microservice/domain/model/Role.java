@@ -11,8 +11,6 @@ public class Role {
     public Role(){}
 
     public Role(Long id, RoleList name, String description) {
-        if (name == null ) throw new IllegalArgumentException("Rol name is required");
-
         this.id = id;
         this.name = name;
         this.description = description;
