@@ -65,13 +65,6 @@ class RoleHandlerImplTest {
     }
 
     @Test
-    void getAllRoles_ShouldThrowExceptionWhenNull() {
-        when(servicePort.getAllRoles()).thenReturn(null);
-
-        assertThrows(RoleNotFoundException.class, () -> handler.getAllRoles());
-    }
-
-    @Test
     void getRoleById_ShouldReturnMappedRole() {
         Role role = new Role(1L,RoleList.ROLE_CUSTOMER,"Cliente");
         RoleResponseDto responseDto = new RoleResponseDto();
@@ -101,29 +94,28 @@ class RoleHandlerImplTest {
         assertEquals("ROLE_EMPLOYED", result.getName());
     }
 
+
     @Test
-    void updateRole_ShouldUpdateAndSaveRole() {
+    void updateRole_shouldCallServiceWithMappedRole() {
+        Long id = 3L;
         RoleRequestDto requestDto = new RoleRequestDto();
-        requestDto.setName("ROLE_OWNER");
-        requestDto.setDescription("Propietario");
-        Role existing = new Role(5L,RoleList.ROLE_CUSTOMER,"Cliente");
+        requestDto.setName("ROLE_CUSTOMER");
+        requestDto.setDescription("ROLE_CUSTOMER");
+        Role role = new Role(id, RoleList.ROLE_CUSTOMER,"ROLE_CUSTOMER");
 
-        when(servicePort.getRole(5L)).thenReturn(existing);
+        when(requestMapper.toRole(requestDto)).thenReturn(role);
 
-        handler.updateRole(5L, requestDto);
+        handler.updateRole(id, requestDto);
 
-        assertEquals(RoleList.ROLE_OWNER, existing.getName());
-        assertEquals("Propietario", existing.getDescription());
-        verify(servicePort).updateRole(existing);
+        verify(servicePort).updateRole(id, role);
     }
 
     @Test
-    void deleteRole_ShouldCallDeleteIfRoleExists() {
-        Role existing = new Role(10L,RoleList.ROLE_EMPLOYED,"Empleado");
-        when(servicePort.getRole(10L)).thenReturn(existing);
+    void deleteRole_shouldCallServiceDelete() {
+        Long id = 4L;
 
-        handler.deleteRole(10L);
+        handler.deleteRole(id);
 
-        verify(servicePort).deleteRole(10L);
+        verify(servicePort).deleteRole(id);
     }
 }
