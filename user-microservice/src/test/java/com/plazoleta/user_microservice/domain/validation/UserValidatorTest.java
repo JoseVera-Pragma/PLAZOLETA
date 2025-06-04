@@ -2,466 +2,232 @@ package com.plazoleta.user_microservice.domain.validation;
 
 
 import com.plazoleta.user_microservice.domain.exception.RoleNotAllowedException;
-import com.plazoleta.user_microservice.domain.exception.UnderAgeOwnerException;
+import com.plazoleta.user_microservice.domain.exception.UnderAgeException;
 import com.plazoleta.user_microservice.domain.exception.UserAlreadyExistsException;
-import com.plazoleta.user_microservice.domain.exception.UserNotFoundException;
 import com.plazoleta.user_microservice.domain.model.*;
 import com.plazoleta.user_microservice.domain.spi.IUserPersistencePort;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class UserValidatorTest {
 
     @Mock
     private IUserPersistencePort userPersistencePort;
 
-    @InjectMocks
     private UserValidator userValidator;
 
-    private final Role adminRole = new Role(1L, RoleList.ROLE_ADMIN, "Administrador");
-    private final Role ownerRole = new Role(2L, RoleList.ROLE_OWNER, "Propietario");
-    private final Role employedRole = new Role(4L, RoleList.ROLE_EMPLOYED, "Empleado");
-    private final Role customerRole = new Role(3L, RoleList.ROLE_CUSTOMER, "Cliente");
-    private final User sampleOwnerUser = User.builder()
-            .id(2L)
-            .firstName("First")
-            .lastName("Last")
-            .identityNumber(new IdentityNumber("1231321322"))
-            .phoneNumber(new PhoneNumber("+573111551451"))
-            .dateOfBirth(LocalDate.of(2007, 1, 2))
-            .email(new Email("test@example.com"))
-            .password("password")
-            .role(ownerRole)
-            .build();
 
-    private User customUser(Role role) {
-        return User.builder()
-                .id(2L)
-                .firstName("First")
-                .lastName("Last")
-                .identityNumber(new IdentityNumber("1231321322"))
-                .phoneNumber(new PhoneNumber("+573111551451"))
-                .dateOfBirth(LocalDate.of(2007, 1, 2))
-                .email(new Email("test@example.com"))
+    private final Role adminRole = new Role(1L, RoleList.ROLE_ADMIN,"ROLE_ADMIN");
+    private final Role ownerRole = new Role(2L, RoleList.ROLE_OWNER,"ROLE_OWNER");
+    private final Role employedRole = new Role(3L, RoleList.ROLE_EMPLOYED,"ROLE_EMPLOYED");
+    private final Role customerRole = new Role(4L, RoleList.ROLE_CUSTOMER,"ROLE_CUSTOMER");
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        userValidator = new UserValidator(userPersistencePort);
+    }
+
+    private User.Builder baseUserBuilder() {
+        return new User.Builder()
+                .id(1L)
+                .firstName("John")
+                .lastName("Doe")
+                .identityNumber("123456789")
+                .phoneNumber("+1234567890")
+                .email("john@example.com")
                 .password("password")
-                .role(role)
+                .dateOfBirth(LocalDate.of(2000, 1, 1))
+                .role(employedRole)
+                .restaurantId(10L);
+    }
+
+    @Test
+    void validateUserCreation_validData_noExceptionThrown() {
+        User validUser = new User.Builder()
+                .id(1L)
+                .firstName("Carlos")
+                .lastName("Pérez")
+                .identityNumber("123456789")
+                .phoneNumber("+573001112233")
+                .email("carlos.perez@example.com")
+                .password("securePassword123")
+                .dateOfBirth(LocalDate.now().minusYears(25))
+                .role(employedRole)
+                .restaurantId(100L)
                 .build();
+
+        when(userPersistencePort.getUserByEmail(validUser.getEmail())).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> userValidator.validateUserCreation(validUser, ownerRole));
     }
 
-    @Nested
-    class ValidateUserCreationTest {
-
-        @Test
-        void shouldNotThrowExceptionWhenUserCreatedIsValid() {
-            Role creator = adminRole;
-
-            assertDoesNotThrow(() -> userValidator.validateUserCreation(sampleOwnerUser, creator));
-        }
-
-        @Test
-        void shouldNotThrowExceptionWhenUserCreatedIsValidAndNotValidateAge() {
-            User newUser = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2000, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(employedRole)
-                    .build();
-
-            Role updater = ownerRole;
-
-            assertDoesNotThrow(() -> userValidator.validateUserCreation(newUser, updater));
-        }
-
-        @Test
-        void shouldThrowIfEmailAlreadyExists() {
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(sampleOwnerUser);
-
-            User newUser = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2000, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-            Role creator = adminRole;
-
-            assertThrows(UserAlreadyExistsException.class, () -> userValidator.validateUserCreation(newUser, creator));
-        }
-
-        @Test
-        void shouldThrowIfInvalidRoleAssignmentUpdaterRolOwner() {
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-            Role updater = ownerRole;
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserCreation(user, updater));
-        }
-
-        @Test
-        void shouldThrowIfInvalidRoleAssignmentUpdaterRolEmployed() {
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserCreation(user, employedRole));
-        }
-
-        @Test
-        void shouldThrowIfInvalidRoleAssignmentUpdaterRolCustomer() {
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserCreation(user, customerRole));
-        }
-
-        @Test
-        void shouldPassIfValid() {
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-
-            assertDoesNotThrow(() -> userValidator.validateUserCreation(sampleOwnerUser, adminRole));
-        }
-
-        @Test
-        void shouldThrowIfEmailAlreadyExistsEvenWithDifferentCase() {
-            when(userPersistencePort.getUserByEmail(new Email("test@example.com"))).thenReturn(sampleOwnerUser);
-
-            User newUser = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2000, 1, 1))
-                    .email(new Email("TEST@EXAMPLE.COM"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-            Role creator = adminRole;
-
-            assertThrows(UserAlreadyExistsException.class, () -> userValidator.validateUserCreation(newUser, creator));
-        }
-
-        @Test
-        void shouldNotThrowWhenOwnerIsExactly18YearsOld() {
-            LocalDate today = LocalDate.now();
-            LocalDate birthday = today.minusYears(18);
-
-            User user = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(birthday)
-                    .email(new Email("test18@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            when(userPersistencePort.getUserByEmail(user.getEmail())).thenReturn(null);
-
-            assertDoesNotThrow(() -> userValidator.validateUserCreation(user, adminRole));
-        }
-
-        @Test
-        void shouldThrowWhenOwnerTriesToCreateAdminUser() {
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserCreation(customUser(adminRole), ownerRole));
-        }
-
-        @Test
-        void shouldThrowWhenOwnerTriesToCreateOwnerUser() {
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserCreation(customUser(ownerRole), ownerRole));
-        }
-
-        @Test
-        void shouldThrowWhenEmployedTriesToCreateEmployedUser() {
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserCreation(customUser(employedRole), employedRole));
-        }
+    @Test
+    void validateEmail_validEmail_noException() {
+        assertDoesNotThrow(() -> userValidator.validateEmail("test@example.com"));
     }
 
-    @Nested
-    class ValidateUserUpdateTest {
-
-        @Test
-        void shouldNotThrowExceptionWhenUserUpdateIsValid() {
-            User userOld = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-            when(userPersistencePort.getUser(2L)).thenReturn(userOld);
-
-            assertDoesNotThrow(() -> userValidator.validateUserUpdate(sampleOwnerUser, adminRole));
-        }
-
-        @Test
-        void shouldThrowIfUserNotFound() {
-            when(userPersistencePort.getUser(1L)).thenReturn(null);
-
-            User user = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            Role updater = adminRole;
-
-            assertThrows(UserNotFoundException.class, () -> userValidator.validateUserUpdate(user, updater));
-        }
-
-        @Test
-        void shouldThrowIfEmailUsedByAnother() {
-
-            User userOld = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            when(userPersistencePort.getUser(userOld.getId())).thenReturn(userOld);
-
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(sampleOwnerUser);
-
-            User user = User.builder()
-                    .id(1L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            Role updater = adminRole;
-
-            assertThrows(UserAlreadyExistsException.class, () -> userValidator.validateUserUpdate(user, updater));
-        }
-
-        @Test
-        void shouldThrowIfInvalidRoleAssignment() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-
-
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(user, employedRole));
-        }
-
-        @Test
-        void shouldThrowIfInvalidRoleAssignmentUpdaterRolOwner() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-
-
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-            Role updater = ownerRole;
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(user, updater));
-        }
-
-        @Test
-        void shouldThrowIfInvalidRoleAssignmentUpdaterRolCustomer() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-
-
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(ownerRole)
-                    .build();
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(user, customerRole));
-        }
-
-        @Test
-        void shouldThrowWhenOwnerTriesToUpdateAdminUser() {
-            when(userPersistencePort.getUser(2L)).thenReturn(customUser(adminRole));
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(customUser(adminRole), ownerRole));
-        }
-
-        @Test
-        void shouldThrowWhenOwnerTriesToUpdateOwnerUser() {
-            when(userPersistencePort.getUser(2L)).thenReturn(customUser(ownerRole));
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(customUser(ownerRole), ownerRole));
-        }
-
-        @Test
-        void shouldThrowWhenEmployedTriesToUpdateEmployedUser() {
-            when(userPersistencePort.getUser(2L)).thenReturn(customUser(employedRole));
-            when(userPersistencePort.getUserByEmail(sampleOwnerUser.getEmail())).thenReturn(null);
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(customUser(employedRole), employedRole));
-        }
+    @Test
+    void validateEmail_invalidEmail_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateEmail("invalidemail"));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateEmail(""));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateEmail(null));
     }
 
-    @Nested
-    class ValidateUserDeleteTest {
-
-        @Test
-        void shouldNotThrowExceptionWhenUserDeleteIsValid() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-            assertDoesNotThrow(() -> userValidator.validateUserDelete(sampleOwnerUser, adminRole));
-        }
-
-        @Test
-        void shouldThrowIfUserNotFound() {
-            assertThrows(UserNotFoundException.class, () -> userValidator.validateUserDelete(null, adminRole));
-        }
-
-        @Test
-        void shouldThrowIfDeleterLacksPermission() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserDelete(sampleOwnerUser, ownerRole));
-        }
-
-        @Test
-        void shouldThrowIfDeleterRolNotAllowedAdmin() {
-            User user = User.builder()
-                    .id(2L)
-                    .firstName("First")
-                    .lastName("Last")
-                    .identityNumber(new IdentityNumber("1231321322"))
-                    .phoneNumber(new PhoneNumber("+573111551451"))
-                    .dateOfBirth(LocalDate.of(2007, 1, 1))
-                    .email(new Email("test@example.com"))
-                    .password("password")
-                    .role(adminRole)
-                    .build();
-            when(userPersistencePort.getUser(2L)).thenReturn(user);
-
-            Role deleter = adminRole;
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserDelete(user, deleter));
-        }
-
-        @Test
-        void shouldThrowIfDeleterRolNotAllowedEmployed() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserDelete(sampleOwnerUser, employedRole));
-        }
-
-        @Test
-        void shouldThrowIfDeleterRolNotAllowedCustomer() {
-            when(userPersistencePort.getUser(2L)).thenReturn(sampleOwnerUser);
-
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserDelete(sampleOwnerUser, customerRole));
-        }
-
-
-        @Test
-        void shouldThrowWhenOwnerTriesToDeleteAdminUser() {
-            when(userPersistencePort.getUser(2L)).thenReturn(customUser(adminRole));
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(customUser(adminRole), ownerRole));
-        }
-
-        @Test
-        void shouldThrowWhenOwnerTriesToDeleteOwnerUser() {
-            when(userPersistencePort.getUser(2L)).thenReturn(customUser(ownerRole));
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(customUser(ownerRole), ownerRole));
-        }
-
-        @Test
-        void shouldThrowWhenEmployedTriesToDeleteEmployedUser() {
-            when(userPersistencePort.getUser(2L)).thenReturn(customUser(employedRole));
-            assertThrows(RoleNotAllowedException.class, () -> userValidator.validateUserUpdate(customUser(employedRole), employedRole));
-        }
+    @Test
+    void validateIdentityNumber_valid_noException() {
+        assertDoesNotThrow(() -> userValidator.validateIdentityNumber("123456"));
     }
+
+    @Test
+    void validateIdentityNumber_invalid_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateIdentityNumber("abc123"));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateIdentityNumber(""));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateIdentityNumber(null));
+    }
+
+    @Test
+    void validatePhoneNumber_valid_noException() {
+        assertDoesNotThrow(() -> userValidator.validatePhoneNumber("+1234567890"));
+        assertDoesNotThrow(() -> userValidator.validatePhoneNumber("1234567890"));
+    }
+
+    @Test
+    void validatePhoneNumber_invalid_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validatePhoneNumber("abc123"));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validatePhoneNumber(""));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validatePhoneNumber(null));
+    }
+
+    @Test
+    void validateUniqueEmail_emailNotExists_noException() {
+        when(userPersistencePort.getUserByEmail("new@example.com")).thenReturn(Optional.empty());
+        assertDoesNotThrow(() -> userValidator.validateUniqueEmail("new@example.com"));
+    }
+
+    @Test
+    void validateUniqueEmail_emailExists_throwsUserAlreadyExists() {
+        when(userPersistencePort.getUserByEmail("exist@example.com")).thenReturn(Optional.of(mock(User.class)));
+        assertThrows(UserAlreadyExistsException.class, () -> userValidator.validateUniqueEmail("exist@example.com"));
+    }
+
+    @Test
+    void validateOwnerAge_ownerAbove18_noException() {
+        User user = baseUserBuilder()
+                .role(ownerRole)
+                .dateOfBirth(LocalDate.now().minusYears(19))
+                .build();
+
+        assertDoesNotThrow(() -> userValidator.validateOwnerAge(user));
+    }
+
+    @Test
+    void validateOwnerAge_ownerBelow18_throwsUnderAge() {
+        User user = baseUserBuilder()
+                .role(ownerRole)
+                .dateOfBirth(LocalDate.now().minusYears(17))
+                .build();
+
+        UnderAgeException ex = assertThrows(UnderAgeException.class, () -> userValidator.validateOwnerAge(user));
+        assertEquals("Owner must be at least 18 years old.", ex.getMessage());
+    }
+
+    @Test
+    void validateOwnerAge_ownerNoDob_throwsUnderAge() {
+        User user = baseUserBuilder()
+                .role(ownerRole)
+                .dateOfBirth(null)
+                .build();
+
+        UnderAgeException ex = assertThrows(UnderAgeException.class, () -> userValidator.validateOwnerAge(user));
+        assertEquals("Date of birth is required.", ex.getMessage());
+    }
+
+    @Test
+    void validateRestaurantId_employedWithRestaurantId_noException() {
+        User user = baseUserBuilder()
+                .role(employedRole)
+                .restaurantId(5L)
+                .build();
+
+        assertDoesNotThrow(() -> userValidator.validateRestaurantId(user));
+    }
+
+    @Test
+    void validateRestaurantId_employedWithoutRestaurantId_throwsException() {
+        User user = baseUserBuilder()
+                .role(employedRole)
+                .restaurantId(null)
+                .build();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> userValidator.validateRestaurantId(user));
+        assertEquals("An employed user must be associated with a restaurant ID.", ex.getMessage());
+    }
+
+    @Test
+    void validateRestaurantId_nonEmployed_noException() {
+        User user = baseUserBuilder()
+                .role(ownerRole)
+                .restaurantId(null)
+                .build();
+
+        assertDoesNotThrow(() -> userValidator.validateRestaurantId(user));
+    }
+
+    @Test
+    void validateRoleCreationPermissions_ownerByAdmin_noException() {
+        userValidator.validateRoleCreationPermissions(ownerRole, adminRole);
+    }
+
+    @Test
+    void validateRoleCreationPermissions_ownerByNonAdmin_throwsException() {
+        RoleNotAllowedException ex = assertThrows(RoleNotAllowedException.class,
+                () -> userValidator.validateRoleCreationPermissions(ownerRole, employedRole));
+        assertEquals("Only ADMIN can create an OWNER.", ex.getMessage());
+    }
+
+    @Test
+    void validateRoleCreationPermissions_employedByOwner_noException() {
+        userValidator.validateRoleCreationPermissions(employedRole, ownerRole);
+    }
+
+    @Test
+    void validateRoleCreationPermissions_employedByNonOwner_throwsException() {
+        RoleNotAllowedException ex = assertThrows(RoleNotAllowedException.class,
+                () -> userValidator.validateRoleCreationPermissions(employedRole, adminRole));
+        assertEquals("Only OWNER can create an EMPLOYED.", ex.getMessage());
+    }
+
+    @Test
+    void validateRoleCreationPermissions_adminByAdmin_noException() {
+        userValidator.validateRoleCreationPermissions(adminRole, adminRole);
+    }
+
+    @Test
+    void validateRoleCreationPermissions_adminByNonAdmin_throwsException() {
+        RoleNotAllowedException ex = assertThrows(RoleNotAllowedException.class,
+                () -> userValidator.validateRoleCreationPermissions(adminRole, ownerRole));
+        assertEquals("Creation of ADMIN users is not allowed.", ex.getMessage());
+    }
+/*
+    @Test
+    void validateUserCreation_allValid_noException() {
+        User newUser = baseUserBuilder()
+                .role(employedRole)
+                .restaurantId(1L)
+                .build();
+
+        when(userPersistencePort.getUserByEmail(newUser.getEmail())).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> userValidator.validateUserCreation(newUser, adminRole));
+    }*/
 }

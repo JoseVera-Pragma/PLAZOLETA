@@ -1,11 +1,7 @@
 package com.plazoleta.user_microservice.infrastructure.out.jpa.adapter;
 
-import com.plazoleta.user_microservice.domain.exception.RoleAlreadyExistsException;
-import com.plazoleta.user_microservice.domain.exception.RoleNotFoundException;
 import com.plazoleta.user_microservice.domain.model.Role;
 import com.plazoleta.user_microservice.domain.model.RoleList;
-import com.plazoleta.user_microservice.infrastructure.exception.NotDataFoundException;
-import com.plazoleta.user_microservice.infrastructure.exception.RoleAssignedException;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.entity.RoleEntity;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.mapper.IRoleEntityMapper;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.repository.IRoleRepository;
@@ -49,7 +45,6 @@ class RoleJpaAdapterTest {
 
     @Test
     void saveRole_ShouldSaveSuccessfully_WhenRoleDoesNotExist() {
-        when(roleRepository.findByName(RoleList.ROLE_ADMIN)).thenReturn(null);
         when(roleMapper.toRoleEntity(role)).thenReturn(roleEntity);
         when(roleRepository.save(roleEntity)).thenReturn(roleEntity);
         when(roleMapper.toRole(roleEntity)).thenReturn(role);
@@ -61,39 +56,25 @@ class RoleJpaAdapterTest {
     }
 
     @Test
-    void saveRole_ShouldThrowException_WhenRoleExists() {
-        when(roleRepository.findByName(RoleList.ROLE_ADMIN)).thenReturn(roleEntity);
-
-        assertThrows(RoleAlreadyExistsException.class, () -> roleJpaAdapter.saveRole(role));
-    }
-
-    @Test
     void getRole_ShouldReturnRole_WhenFound() {
         when(roleRepository.findById(1L)).thenReturn(Optional.of(roleEntity));
         when(roleMapper.toRole(roleEntity)).thenReturn(role);
 
-        Role result = roleJpaAdapter.getRole(1L);
+        Optional<Role> result = roleJpaAdapter.getRole(1L);
 
         assertNotNull(result);
-        assertEquals(RoleList.ROLE_ADMIN, result.getName());
-    }
-
-    @Test
-    void getRole_ShouldThrowException_WhenNotFound() {
-        when(roleRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(RoleNotFoundException.class, () -> roleJpaAdapter.getRole(1L));
+        assertEquals(RoleList.ROLE_ADMIN, result.get().getName());
     }
 
     @Test
     void getRoleByName_ShouldReturnRole() {
-        when(roleRepository.findByName(RoleList.ROLE_ADMIN)).thenReturn(roleEntity);
+        when(roleRepository.findByName(RoleList.ROLE_ADMIN)).thenReturn(Optional.ofNullable(roleEntity));
         when(roleMapper.toRole(roleEntity)).thenReturn(role);
 
-        Role result = roleJpaAdapter.getRoleByName(RoleList.ROLE_ADMIN);
+        Optional<Role> result = roleJpaAdapter.getRoleByName(RoleList.ROLE_ADMIN);
 
         assertNotNull(result);
-        assertEquals(RoleList.ROLE_ADMIN, result.getName());
+        assertEquals(RoleList.ROLE_ADMIN, result.get().getName());
     }
 
     @Test
@@ -110,16 +91,9 @@ class RoleJpaAdapterTest {
         assertEquals(RoleList.ROLE_ADMIN, result.get(0).getName());
     }
 
-    @Test
-    void getAllRole_ShouldThrowException_WhenNoData() {
-        when(roleRepository.findAll()).thenReturn(List.of());
-
-        assertThrows(NotDataFoundException.class, () -> roleJpaAdapter.getAllRole());
-    }
 
     @Test
     void updateRole_ShouldUpdate_WhenExists() {
-        when(roleRepository.existsById(role.getId())).thenReturn(true);
         when(roleMapper.toRoleEntity(role)).thenReturn(roleEntity);
 
         roleJpaAdapter.updateRole(role);
@@ -128,35 +102,10 @@ class RoleJpaAdapterTest {
     }
 
     @Test
-    void updateRole_ShouldThrow_WhenNotFound() {
-        when(roleRepository.existsById(role.getId())).thenReturn(false);
-
-        assertThrows(RoleNotFoundException.class, () -> roleJpaAdapter.updateRole(role));
-    }
-
-    @Test
     void deleteRole_ShouldDelete_WhenExistsAndNotAssigned() {
-        when(roleRepository.existsById(role.getId())).thenReturn(true);
-        when(userRepository.existsByRoleId(role.getId())).thenReturn(false);
-
         roleJpaAdapter.deleRole(role.getId());
 
         verify(roleRepository).deleteById(role.getId());
-    }
-
-    @Test
-    void deleteRole_ShouldThrow_WhenNotExists() {
-        when(roleRepository.existsById(role.getId())).thenReturn(false);
-
-        assertThrows(RoleNotFoundException.class, () -> roleJpaAdapter.deleRole(role.getId()));
-    }
-
-    @Test
-    void deleteRole_ShouldThrow_WhenRoleIsAssigned() {
-        when(roleRepository.existsById(role.getId())).thenReturn(true);
-        when(userRepository.existsByRoleId(role.getId())).thenReturn(true);
-
-        assertThrows(RoleAssignedException.class, () -> roleJpaAdapter.deleRole(role.getId()));
     }
 
     @Test

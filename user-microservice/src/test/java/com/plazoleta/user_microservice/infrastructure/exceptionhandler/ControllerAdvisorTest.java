@@ -118,7 +118,7 @@ class ControllerAdvisorTest {
     @Test
     void handleUnderAgeOwner_ShouldReturnConflictResponse() {
         String errorMessage = "Owner must be of legal age";
-        UnderAgeOwnerException exception = new UnderAgeOwnerException(errorMessage);
+        UnderAgeException exception = new UnderAgeException(errorMessage);
 
         ResponseEntity<ApiError> response = controllerAdvisor.handleUnderAgeOwner(exception, request);
 

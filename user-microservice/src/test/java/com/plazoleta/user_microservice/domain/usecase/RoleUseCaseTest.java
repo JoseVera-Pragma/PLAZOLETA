@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,7 +31,7 @@ class RoleUseCaseTest {
 
     @Test
     void shouldSaveRoleSuccessfullyWhenNotExists() {
-        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(null);
+        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(Optional.empty());
         when(rolePersistencePort.saveRole(sampleRole)).thenReturn(sampleRole);
 
         Role result = roleUseCase.saveRole(sampleRole);
@@ -41,13 +42,13 @@ class RoleUseCaseTest {
 
     @Test
     void shouldThrowWhenRoleAlreadyExistsOnSave() {
-        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(sampleRole);
+        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(Optional.of(sampleRole));
         assertThrows(RoleAlreadyExistsException.class, () -> roleUseCase.saveRole(sampleRole));
     }
 
     @Test
     void shouldReturnRoleById() {
-        when(rolePersistencePort.getRole(1L)).thenReturn(sampleRole);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.of(sampleRole));
 
         Role result = roleUseCase.getRole(1L);
 
@@ -56,11 +57,29 @@ class RoleUseCaseTest {
 
     @Test
     void shouldReturnRoleByName() {
-        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(sampleRole);
+        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(Optional.of(sampleRole));
 
         Role result = roleUseCase.getRoleByName(RoleList.ROLE_ADMIN);
 
         assertEquals(sampleRole, result);
+    }
+
+    @Test
+    void getRole_shouldThrowRoleNotFoundException_whenRoleDoesNotExist() {
+        Long nonExistentId = 99L;
+        when(rolePersistencePort.getRole(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThrows(RoleNotFoundException.class, () -> roleUseCase.getRole(nonExistentId));
+        verify(rolePersistencePort).getRole(nonExistentId);
+    }
+
+    @Test
+    void getRoleByName_shouldThrowRoleNotFoundException_whenRoleDoesNotExist() {
+        RoleList roleName = RoleList.ROLE_EMPLOYED;
+        when(rolePersistencePort.getRoleByName(roleName)).thenReturn(Optional.empty());
+
+        assertThrows(RoleNotFoundException.class, () -> roleUseCase.getRoleByName(roleName));
+        verify(rolePersistencePort).getRoleByName(roleName);
     }
 
     @Test
@@ -78,10 +97,10 @@ class RoleUseCaseTest {
     void shouldUpdateRoleSuccessfully() {
         Role updatedRole = new Role(1L, RoleList.ROLE_OWNER,"Propietario");
 
-        when(rolePersistencePort.getRole(1L)).thenReturn(sampleRole);
-        when(rolePersistencePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(null);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.of(sampleRole));
+        when(rolePersistencePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(Optional.empty());
 
-        roleUseCase.updateRole(updatedRole);
+        roleUseCase.updateRole(1L, updatedRole);
 
         verify(rolePersistencePort).updateRole(updatedRole);
     }
@@ -90,35 +109,35 @@ class RoleUseCaseTest {
     void shouldUpdateRoleDescriptionSuccessfully() {
         Role updatedRole = new Role(1L, RoleList.ROLE_ADMIN,"Propietario");
 
-        when(rolePersistencePort.getRole(1L)).thenReturn(sampleRole);
-        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(sampleRole);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.of(sampleRole));
+        when(rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)).thenReturn(Optional.of(sampleRole));
 
-        roleUseCase.updateRole(updatedRole);
+        roleUseCase.updateRole(1L, updatedRole);
 
         verify(rolePersistencePort).updateRole(updatedRole);
     }
 
     @Test
     void shouldThrowWhenUpdatingNonExistentRole() {
-        when(rolePersistencePort.getRole(1L)).thenReturn(null);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.empty());
 
-        assertThrows(RoleNotFoundException.class, () -> roleUseCase.updateRole(sampleRole));
+        assertThrows(RoleNotFoundException.class, () -> roleUseCase.updateRole(1L, sampleRole));
     }
 
     @Test
     void shouldThrowWhenUpdatingRolNameAlreadyInUse() {
         Role otherRole = new Role(2L, RoleList.ROLE_OWNER,"Propietario");
-        when(rolePersistencePort.getRole(1L)).thenReturn(sampleRole);
-        when(rolePersistencePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(otherRole);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.of(sampleRole));
+        when(rolePersistencePort.getRoleByName(RoleList.ROLE_OWNER)).thenReturn(Optional.of(otherRole));
 
         Role updatedRole = new Role(1L, RoleList.ROLE_OWNER,"Propietario");
 
-        assertThrows(RoleAlreadyExistsException.class, () -> roleUseCase.updateRole(updatedRole));
+        assertThrows(RoleAlreadyExistsException.class, () -> roleUseCase.updateRole(1L,updatedRole));
     }
 
     @Test
     void shouldDeleteRoleSuccessfully() {
-        when(rolePersistencePort.getRole(1L)).thenReturn(sampleRole);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.of(sampleRole));
         when(rolePersistencePort.isRoleAssignedToUsers(1L)).thenReturn(false);
 
         roleUseCase.deleteRole(1L);
@@ -128,14 +147,14 @@ class RoleUseCaseTest {
 
     @Test
     void shouldThrowWhenDeletingNonExistenceRole() {
-        when(rolePersistencePort.getRole(1L)).thenReturn(null);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.empty());
 
         assertThrows(RoleNotFoundException.class, () -> roleUseCase.deleteRole(1L));
     }
 
     @Test
     void shouldThrowWhenDeletingRolAssignedToUsers() {
-        when(rolePersistencePort.getRole(1L)).thenReturn(sampleRole);
+        when(rolePersistencePort.getRole(1L)).thenReturn(Optional.of(sampleRole));
         when(rolePersistencePort.isRoleAssignedToUsers(1L)).thenReturn(true);
 
         assertThrows(RoleInUseException.class, () -> roleUseCase.deleteRole(1L));

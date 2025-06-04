@@ -59,10 +59,10 @@ class RoleControllerTest {
                 .id(1L)
                 .firstName("Super")
                 .lastName("Admin")
-                .identityNumber(new IdentityNumber("999999999"))
+                .identityNumber("999999999")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
-                .phoneNumber(new PhoneNumber("+573000000000"))
-                .email(new Email("admin@plazoleta.com"))
+                .phoneNumber("+573000000000")
+                .email("admin@plazoleta.com")
                 .password("encrypted")
                 .role(new Role(1L, RoleList.ROLE_ADMIN, "Administrador"))
                 .build();
@@ -132,7 +132,8 @@ class RoleControllerTest {
         RoleEntity oldRole = new RoleEntity();
         oldRole.setName(RoleList.ROLE_ADMIN);
         oldRole.setDescription("TO_UPDATE");
-        RoleEntity role = roleRepository.save(oldRole);
+        RoleEntity role;
+        role = roleRepository.save(oldRole);
 
 
         RoleRequestDto request = new RoleRequestDto();

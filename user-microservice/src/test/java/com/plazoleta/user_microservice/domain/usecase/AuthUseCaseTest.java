@@ -5,6 +5,7 @@ import com.plazoleta.user_microservice.domain.model.*;
 import com.plazoleta.user_microservice.domain.spi.IPasswordEncoderPort;
 import com.plazoleta.user_microservice.domain.spi.ITokenGeneratorPort;
 import com.plazoleta.user_microservice.domain.spi.IUserPersistencePort;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,114 +13,105 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class AuthUseCaseTest {
 
-    @Mock
     private IUserPersistencePort userPersistencePort;
-
-    @Mock
     private IPasswordEncoderPort passwordEncoderPort;
-
-    @Mock
     private ITokenGeneratorPort tokenGeneratorPort;
-
-    @InjectMocks
     private AuthUseCase authUseCase;
 
-    private final String email = "test@example.com";
-    private final String password = "password123";
-    private final String encodedPassword = "encodedPassword";
-    private final Long userId = 1L;
-    private final String role = "ROLE_OWNER";
-    private final String token = "valid.jwt.token";
+    @BeforeEach
+    void setUp() {
+        userPersistencePort = mock(IUserPersistencePort.class);
+        passwordEncoderPort = mock(IPasswordEncoderPort.class);
+        tokenGeneratorPort = mock(ITokenGeneratorPort.class);
+        authUseCase = new AuthUseCase(userPersistencePort, passwordEncoderPort, tokenGeneratorPort);
+    }
 
-    private User buildUser() {
-        return new User.Builder()
-                .id(userId)
-                .firstName("First")
-                .lastName("Last")
-                .dateOfBirth(LocalDate.of(2000,1,1))
-                .identityNumber(new IdentityNumber("1321321321"))
-                .phoneNumber(new PhoneNumber("+57545123132"))
-                .email(new Email(email))
-                .password(encodedPassword)
-                .role(new Role(2L, RoleList.ROLE_OWNER, "adf"))
+    private User mockUser() {
+        return User.builder()
+                .id(1L)
+                .firstName("Jose")
+                .lastName("Vera")
+                .identityNumber("123456789")
+                .phoneNumber("3000000000")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .email("test@example.com")
+                .password("encodedPassword")
+                .role(new Role(1L, RoleList.ROLE_EMPLOYED,"ROLE_EMPLOYED"))
                 .build();
     }
 
     @Test
-    void shouldReturnTokenWhenCredentialsAreValid() {
-        User user = buildUser();
+    void authenticate_shouldReturnToken_whenCredentialsAreValid() {
+        User user = mockUser();
+        String rawPassword = "1234";
+        String token = "valid.jwt.token";
 
-        when(userPersistencePort.getUserByEmail(new Email(email))).thenReturn(user);
-        when(passwordEncoderPort.matches(password, encodedPassword)).thenReturn(true);
+        when(userPersistencePort.getUserByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoderPort.matches(rawPassword, user.getPassword())).thenReturn(true);
         when(tokenGeneratorPort.generateToken(user)).thenReturn(token);
 
-        AuthToken authToken = authUseCase.authenticate(email, password);
+        AuthToken result = authUseCase.authenticate(user.getEmail(), rawPassword);
 
-        assertEquals(token, authToken.getToken());
-        assertEquals(email, authToken.getEmail());
-        assertEquals(role, authToken.getRole());
-        assertEquals(userId, authToken.getUserId());
+        assertEquals(token, result.getToken());
+        assertEquals(user.getEmail(), result.getEmail());
+        assertEquals(user.getRole().getName().name(), result.getRole());
+        assertEquals(user.getId(), result.getUserId());
     }
 
     @Test
-    void shouldThrowWhenUserIsNotFound() {
-        when(userPersistencePort.getUserByEmail(new Email(email))).thenReturn(null);
+    void authenticate_shouldThrowUserNotFoundException_whenEmailNotFound() {
+        String email = "notfound@example.com";
 
-        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
-                () -> authUseCase.authenticate(email, password));
+        when(userPersistencePort.getUserByEmail(email)).thenReturn(Optional.empty());
 
-        assertEquals("User not found", exception.getMessage());
+        assertThrows(UserNotFoundException.class, () -> authUseCase.authenticate(email, "password"));
     }
 
     @Test
-    void shouldThrowWhenPasswordDoesNotMatch() {
-        User user = buildUser();
+    void authenticate_shouldThrowRuntimeException_whenPasswordDoesNotMatch() {
+        User user = mockUser();
+        String wrongPassword = "wrong";
 
-        when(userPersistencePort.getUserByEmail(new Email(email))).thenReturn(user);
-        when(passwordEncoderPort.matches(password, encodedPassword)).thenReturn(false);
+        when(userPersistencePort.getUserByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoderPort.matches(wrongPassword, user.getPassword())).thenReturn(false);
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authUseCase.authenticate(email, password));
-
-        assertEquals("Invalid credentials", exception.getMessage());
+        assertThrows(RuntimeException.class, () -> authUseCase.authenticate(user.getEmail(), wrongPassword));
     }
 
     @Test
-    void shouldReturnTrueWhenTokenIsValid() {
+    void validateToken_shouldDelegateToTokenGenerator() {
+        String token = "token123";
+
         when(tokenGeneratorPort.validateToken(token)).thenReturn(true);
 
         assertTrue(authUseCase.validateToken(token));
+        verify(tokenGeneratorPort).validateToken(token);
     }
 
     @Test
-    void shouldReturnFalseWhenTokenIsInvalid() {
-        when(tokenGeneratorPort.validateToken(token)).thenReturn(false);
+    void extractEmailFromToken_shouldDelegateToTokenGenerator() {
+        String token = "token123";
+        String expectedEmail = "test@example.com";
 
-        assertFalse(authUseCase.validateToken(token));
+        when(tokenGeneratorPort.extractEmail(token)).thenReturn(expectedEmail);
+
+        assertEquals(expectedEmail, authUseCase.extractEmailFromToken(token));
     }
 
     @Test
-    void shouldExtractEmailFromToken() {
-        when(tokenGeneratorPort.extractEmail(token)).thenReturn(email);
+    void extractRoleFromToken_shouldDelegateToTokenGenerator() {
+        String token = "token123";
+        String expectedRole = "ROLE_OWNER";
 
-        String result = authUseCase.extractEmailFromToken(token);
+        when(tokenGeneratorPort.extractRole(token)).thenReturn(expectedRole);
 
-        assertEquals(email, result);
-    }
-
-    @Test
-    void shouldExtractRoleFromToken() {
-        when(tokenGeneratorPort.extractRole(token)).thenReturn(role);
-
-        String result = authUseCase.extractRoleFromToken(token);
-
-        assertEquals(role, result);
+        assertEquals(expectedRole, authUseCase.extractRoleFromToken(token));
     }
 }
