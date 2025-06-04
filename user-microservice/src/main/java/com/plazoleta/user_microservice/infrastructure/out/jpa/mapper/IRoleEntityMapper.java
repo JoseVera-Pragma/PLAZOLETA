@@ -9,8 +9,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
-        unmappedSourcePolicy = ReportingPolicy.IGNORE,
-        uses = {IValueObjectMapper.class})
+        unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface IRoleEntityMapper {
 
     Role toRole(RoleEntity roleEntity);
