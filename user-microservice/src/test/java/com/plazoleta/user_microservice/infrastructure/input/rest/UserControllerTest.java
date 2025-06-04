@@ -1,9 +1,9 @@
 package com.plazoleta.user_microservice.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.plazoleta.user_microservice.application.dto.request.CreateBasicUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateEmployedRequestDto;
 import com.plazoleta.user_microservice.application.dto.request.CreateOwnerRequestDto;
+import com.plazoleta.user_microservice.application.dto.request.CreateUserRequestDto;
 import com.plazoleta.user_microservice.application.dto.response.UserResponseDto;
 import com.plazoleta.user_microservice.application.handler.IUserHandler;
 import com.plazoleta.user_microservice.domain.model.*;
@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class SimpleUserControllerTest {
+class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -54,10 +54,10 @@ class SimpleUserControllerTest {
                 .id(1L)
                 .firstName("Super")
                 .lastName("Admin")
-                .identityNumber(new IdentityNumber("999999999"))
+                .identityNumber("999999999")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
-                .phoneNumber(new PhoneNumber("+573000000000"))
-                .email(new Email("admin@plazoleta.com"))
+                .phoneNumber("+573000000000")
+                .email("admin@plazoleta.com")
                 .password("encrypted")
                 .role(new Role(1L, RoleList.ROLE_ADMIN, "Administrador"))
                 .build();
@@ -66,10 +66,10 @@ class SimpleUserControllerTest {
                 .id(1L)
                 .firstName("Super")
                 .lastName("Admin")
-                .identityNumber(new IdentityNumber("999999999"))
+                .identityNumber("999999999")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
-                .phoneNumber(new PhoneNumber("+573000000000"))
-                .email(new Email("admin@plazoleta.com"))
+                .phoneNumber("+573000000000")
+                .email("admin@plazoleta.com")
                 .password("encrypted")
                 .role(new Role(1L, RoleList.ROLE_OWNER, "Administrador"))
                 .build();
@@ -100,7 +100,7 @@ class SimpleUserControllerTest {
     @Test
     void getAllUsers_withAdminRole_shouldReturnOk() throws Exception {
         List<UserResponseDto> mockUsers = List.of(
-                new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww", "ADMIN")
+                new UserResponseDto("First","Last", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww", "ADMIN",null)
         );
 
         Mockito.when(userHandler.getAllUsers()).thenReturn(mockUsers);
@@ -114,7 +114,7 @@ class SimpleUserControllerTest {
     @Test
     void getUserById_shouldReturnUser() throws Exception {
         Long userId = 1L;
-        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww", "ADMIN");
+        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), "admin@plazoleta.com", "psww", "ADMIN", null);
 
         Mockito.when(userHandler.getUser(userId)).thenReturn(user);
 
@@ -127,7 +127,7 @@ class SimpleUserControllerTest {
     @Test
     void getUserByEmail_shouldReturnUser() throws Exception {
         String email = "admin@plazoleta.com";
-        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), email, "psww", "ADMIN");
+        UserResponseDto user = new UserResponseDto("Jose", "admin@email.com", "123123123", "2131321", LocalDate.of(2000, 1, 1), email, "psww", "ADMIN", null);
 
         Mockito.when(userHandler.getUserByEmail(email)).thenReturn(user);
 
@@ -176,6 +176,7 @@ class SimpleUserControllerTest {
                 .phoneNumber("321654987")
                 .email("jose@email.com")
                 .password("pass123")
+                .restaurantId(1L)
                 .build();
 
         mockMvc.perform(post("/users/employeds")
@@ -195,6 +196,7 @@ class SimpleUserControllerTest {
                 .phoneNumber("321654987")
                 .email("jose@email.com")
                 .password("pass123")
+                .restaurantId(1L)
                 .build();
 
         mockMvc.perform(post("/users/employeds")
@@ -208,7 +210,7 @@ class SimpleUserControllerTest {
 
     @Test
     void createCustomer_shouldReturnCreated() throws Exception {
-        CreateBasicUserRequestDto customerDto = CreateBasicUserRequestDto.builder()
+        CreateUserRequestDto customerDto = com.plazoleta.user_microservice.application.dto.request.CreateUserRequestDto.builder()
                 .firstName("Ana")
                 .lastName("Lopez")
                 .identityNumber("987654321")
@@ -222,7 +224,7 @@ class SimpleUserControllerTest {
                         .content(objectMapper.writeValueAsString(customerDto)))
                 .andExpect(status().isCreated());
 
-        Mockito.verify(userHandler).createCustomer(Mockito.any(CreateBasicUserRequestDto.class));
+        Mockito.verify(userHandler).createCustomer(Mockito.any(CreateUserRequestDto.class));
     }
 
 }
