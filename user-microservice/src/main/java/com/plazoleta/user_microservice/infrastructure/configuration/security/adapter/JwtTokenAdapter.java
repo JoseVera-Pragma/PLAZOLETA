@@ -48,7 +48,7 @@ public class JwtTokenAdapter implements ITokenGeneratorPort {
 
         return Jwts.builder()
                 .claims(claims)
-                .subject(user.getEmail().getValue())
+                .subject(user.getEmail())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(expiryDate)
                 .signWith(getSignInKey())

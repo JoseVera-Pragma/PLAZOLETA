@@ -3,14 +3,12 @@ package com.plazoleta.user_microservice.infrastructure.configuration;
 import com.plazoleta.user_microservice.domain.api.IAuthServicePort;
 import com.plazoleta.user_microservice.domain.api.IRoleServicePort;
 import com.plazoleta.user_microservice.domain.api.IUserServicePort;
-import com.plazoleta.user_microservice.domain.spi.IPasswordEncoderPort;
-import com.plazoleta.user_microservice.domain.spi.IRolePersistencePort;
-import com.plazoleta.user_microservice.domain.spi.ITokenGeneratorPort;
-import com.plazoleta.user_microservice.domain.spi.IUserPersistencePort;
+import com.plazoleta.user_microservice.domain.spi.*;
 import com.plazoleta.user_microservice.domain.usecase.AuthUseCase;
 import com.plazoleta.user_microservice.domain.usecase.RoleUseCase;
 import com.plazoleta.user_microservice.domain.usecase.UserUseCase;
 import com.plazoleta.user_microservice.domain.validation.UserValidator;
+import com.plazoleta.user_microservice.infrastructure.configuration.security.adapter.AuthenticatedUserPort;
 import com.plazoleta.user_microservice.infrastructure.configuration.security.adapter.JwtTokenAdapter;
 import com.plazoleta.user_microservice.infrastructure.configuration.security.adapter.PasswordEncoderAdapter;
 import com.plazoleta.user_microservice.infrastructure.out.jpa.adapter.RoleJpaAdapter;
@@ -52,11 +50,6 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public IUserServicePort iUserServicePort() {
-        return new UserUseCase(iUserPersistencePort(), userValidator());
-    }
-
-    @Bean
     public IRoleServicePort iRoleServicePort() {
         return new RoleUseCase(iRolePersistencePort());
     }
@@ -69,6 +62,11 @@ public class BeanConfiguration {
     @Bean
     public IPasswordEncoderPort passwordEncoderPort() {
         return new PasswordEncoderAdapter(passwordEncoder);
+    }
+
+    @Bean
+    public IUserServicePort iUserServicePort(IAuthenticatedUserPort iAuthenticatedUserPort) {
+        return new UserUseCase(iAuthenticatedUserPort, iUserPersistencePort(), passwordEncoderPort(),iRolePersistencePort(),userValidator());
     }
 
     @Bean

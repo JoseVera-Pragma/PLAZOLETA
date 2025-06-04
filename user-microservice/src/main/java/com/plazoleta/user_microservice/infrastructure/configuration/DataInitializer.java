@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 
 @Profile("!test")
@@ -39,7 +40,7 @@ public class DataInitializer implements CommandLineRunner {
             initAdminUser();
             logger.info("✅ Configuración de datos completada exitosamente.");
         } catch (Exception e) {
-            logger.error("❌ Error durante la inicialización de datos: {}", e.getMessage(), e);
+            logger.error("❌ Error durante la inicialización de datos", e);
             throw new RuntimeException("Fallo en la inicialización de datos", e);
         }
     }
@@ -47,14 +48,9 @@ public class DataInitializer implements CommandLineRunner {
     private void initRoles() {
         logger.info("🔧 Verificando roles...");
 
-        try {
-            Role adminRole = rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN);
-            if (adminRole != null) {
-                logger.info("⚠️ Los roles ya estaban inicializados. Saltando creación.");
-                return;
-            }
-        } catch (Exception e) {
-            logger.debug("Rol ADMIN no encontrado, procediendo a crear roles.");
+        if (rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN).isPresent()) {
+            logger.info("⚠️ Los roles ya estaban inicializados. Saltando creación.");
+            return;
         }
 
         logger.info("📝 Creando roles por defecto...");
@@ -67,65 +63,53 @@ public class DataInitializer implements CommandLineRunner {
         createRoleIfNotExists(RoleList.ROLE_EMPLOYED, "Empleado de restaurante");
         createRoleIfNotExists(RoleList.ROLE_CUSTOMER, "Cliente");
 
-        logger.info("✅ Roles inicializados correctamente:");
-        logger.info("   - ADMIN: Administrador del sistema");
-        logger.info("   - OWNER: Propietario de restaurante");
-        logger.info("   - EMPLOYED: Empleado de restaurante");
-        logger.info("   - CUSTOMER: Cliente");
+        logger.info("✅ Roles inicializados correctamente.");
     }
 
     private void createRoleIfNotExists(RoleList roleEnum, String description) {
-        try {
-            Role existingRole = rolePersistencePort.getRoleByName(roleEnum);
-            if (existingRole == null) {
-                logger.info("🔨 Creando rol: {}", roleEnum);
-                rolePersistencePort.saveRole(new Role(null, roleEnum, description));
-                logger.debug("✅ Rol creado: {}", roleEnum);
-            } else {
-                logger.debug("ℹ️ Rol ya existe: {} con ID: {}", roleEnum, existingRole.getId());
-            }
-        } catch (Exception e) {
-            logger.info("🔨 Rol no encontrado, creando: {}", roleEnum);
-            rolePersistencePort.saveRole(new Role(null, roleEnum, description));
-            logger.debug("✅ Rol creado: {}", roleEnum);
+        Optional<Role> existingRole = rolePersistencePort.getRoleByName(roleEnum);
+        if (existingRole.isEmpty()) {
+            Role newRole = new Role(null, roleEnum, description);
+            rolePersistencePort.saveRole(newRole);
+            logger.info("🔨 Rol creado: {}", roleEnum);
+        } else {
+            logger.debug("ℹ️ Rol ya existe: {} con ID: {}", roleEnum, existingRole.get().getId());
         }
     }
 
     private void initAdminUser() {
         logger.info("👤 Verificando usuario administrador...");
 
-        Email adminEmail = new Email("admin@plazoleta.com");
-        User existingUser = userPersistencePort.getUserByEmail(adminEmail);
+        String adminEmail = "admin@plazoleta.com";
+        Optional<User> existingUser = userPersistencePort.getUserByEmail(adminEmail);
 
-        if (existingUser == null) {
-            logger.info("🔨 Creando usuario administrador por defecto...");
-
-            Role adminRole = rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN);
-            if (adminRole == null) {
-                logger.error("❌ No se encontró el rol ADMIN. Asegúrate de que los roles se hayan creado correctamente.");
-                throw new RuntimeException("Role ADMIN not found. Roles must be initialized first.");
-            }
-
-            User adminUser = User.builder()
-                    .firstName("Super")
-                    .lastName("Admin")
-                    .identityNumber(new IdentityNumber("999999999"))
-                    .phoneNumber(new PhoneNumber("+573000000000"))
-                    .dateOfBirth(LocalDate.of(1990, 1, 1))
-                    .email(adminEmail)
-                    .password(passwordEncoder.encode("admin123"))
-                    .role(adminRole)
-                    .build();
-
-            userPersistencePort.saveUser(adminUser);
-
-            logger.info("✅ Usuario ADMIN creado correctamente:");
-            logger.info("   📧 Email: admin@plazoleta.com");
-            logger.info("   🔐 Password: admin123");
-            logger.warn("⚠️  IMPORTANTE: Cambia la contraseña por defecto en producción!");
-        } else {
-            logger.info("ℹ️ Usuario ADMIN ya existe. No se creó uno nuevo.");
-            logger.info("   📧 Email existente: {}", existingUser.getEmail().getValue());
+        if (existingUser.isPresent()) {
+            logger.info("ℹ️ Usuario ADMIN ya existe.");
+            logger.info("   📧 Email existente: {}", existingUser.get().getEmail());
+            return;
         }
+
+        logger.info("🔨 Creando usuario administrador por defecto...");
+
+        Role adminRole = rolePersistencePort.getRoleByName(RoleList.ROLE_ADMIN)
+                .orElseThrow(() -> new IllegalStateException("❌ No se encontró el rol ADMIN. Asegúrate de crear los roles primero."));
+
+        User adminUser = User.builder()
+                .firstName("Super")
+                .lastName("Admin")
+                .identityNumber("999999999")
+                .phoneNumber("+573000000000")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .email(adminEmail)
+                .password(passwordEncoder.encode("admin123"))
+                .role(adminRole)
+                .build();
+
+        userPersistencePort.saveUser(adminUser);
+
+        logger.info("✅ Usuario ADMIN creado correctamente:");
+        logger.info("   📧 Email: {}", adminEmail);
+        logger.info("   🔐 Password: admin123");
+        logger.warn("⚠️ IMPORTANTE: Cambia la contraseña por defecto en producción.");
     }
 }
