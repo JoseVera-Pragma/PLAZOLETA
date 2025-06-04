@@ -10,9 +10,9 @@ public interface IRolePersistencePort {
 
     Role saveRole(Role role);
 
-    Role getRole(Long id);
+    Optional<Role> getRole(Long id);
 
-    Role getRoleByName(RoleList name);
+    Optional<Role> getRoleByName(RoleList name);
 
     List<Role> getAllRole();
 

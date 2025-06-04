@@ -1,21 +1,19 @@
 package com.plazoleta.user_microservice.domain.spi;
 
-import com.plazoleta.user_microservice.domain.model.Email;
 import com.plazoleta.user_microservice.domain.model.User;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface IUserPersistencePort {
 
-    User saveUser(User user);
+    void saveUser(User user);
 
-    User getUser(Long id);
+    Optional<User> getUser(Long id);
 
-    User getUserByEmail(Email email);
+    Optional<User> getUserByEmail(String email);
 
     List<User> getAllUsers();
-
-    void updateUser(User user);
 
     void deleteUser(Long id);
 }

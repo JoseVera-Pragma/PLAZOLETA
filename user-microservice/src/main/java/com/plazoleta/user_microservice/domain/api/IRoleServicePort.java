@@ -14,7 +14,7 @@ public interface IRoleServicePort {
 
     List<Role> getAllRoles();
 
-    void updateRole(Role role);
+    void updateRole(Long id, Role role);
 
     void deleteRole(Long id);
 }

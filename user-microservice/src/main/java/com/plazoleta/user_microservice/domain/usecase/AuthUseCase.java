@@ -3,7 +3,6 @@ package com.plazoleta.user_microservice.domain.usecase;
 import com.plazoleta.user_microservice.domain.api.IAuthServicePort;
 import com.plazoleta.user_microservice.domain.exception.UserNotFoundException;
 import com.plazoleta.user_microservice.domain.model.AuthToken;
-import com.plazoleta.user_microservice.domain.model.Email;
 import com.plazoleta.user_microservice.domain.model.User;
 import com.plazoleta.user_microservice.domain.spi.IPasswordEncoderPort;
 import com.plazoleta.user_microservice.domain.spi.ITokenGeneratorPort;
@@ -25,18 +24,16 @@ public class AuthUseCase implements IAuthServicePort {
 
     @Override
     public AuthToken authenticate(String email, String password) {
-        User user = userPersistencePort.getUserByEmail(new Email(email));
-
-        if (user == null ){
-            throw new UserNotFoundException("User not found");
-        }
+        User user = userPersistencePort.getUserByEmail(email).orElseThrow(
+                () -> new UserNotFoundException("User not found")
+        );
 
         if (!passwordEncoderPort.matches(password, user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
 
         String token = tokenGeneratorPort.generateToken(user);
-        return new AuthToken(token, user.getEmail().getValue(), user.getRole().getName().name(), user.getId());
+        return new AuthToken(token, user.getEmail(), user.getRole().getName().name(), user.getId());
     }
 
     @Override

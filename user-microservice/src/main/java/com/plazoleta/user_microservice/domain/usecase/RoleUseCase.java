@@ -21,7 +21,7 @@ public class RoleUseCase implements IRoleServicePort {
 
     @Override
     public Role saveRole(Role role) {
-        if (iRolePersistencePort.getRoleByName(role.getName()) != null) {
+        if (iRolePersistencePort.getRoleByName(role.getName()).isPresent()) {
             throw new RoleAlreadyExistsException("The role already exists: " + role.getName());
         }
         return iRolePersistencePort.saveRole(role);
@@ -29,12 +29,16 @@ public class RoleUseCase implements IRoleServicePort {
 
     @Override
     public Role getRole(Long id) {
-        return iRolePersistencePort.getRole(id);
+        return iRolePersistencePort.getRole(id).orElseThrow(
+                () -> new RoleNotFoundException("Role not found")
+        );
     }
 
     @Override
     public Role getRoleByName(RoleList name) {
-        return iRolePersistencePort.getRoleByName(name);
+        return iRolePersistencePort.getRoleByName(name).orElseThrow(
+                () -> new RoleNotFoundException("Role not found")
+        );
     }
 
     @Override
@@ -43,20 +47,23 @@ public class RoleUseCase implements IRoleServicePort {
     }
 
     @Override
-    public void updateRole(Role role) {
-        if (iRolePersistencePort.getRole(role.getId()) == null) {
-            throw new RoleNotFoundException("Cannot update: Role not found with ID: " + role.getId());
+    public void updateRole(Long id, Role role) {
+        if (iRolePersistencePort.getRole(id).isEmpty()) {
+            throw new RoleNotFoundException("Cannot update: Role not found with ID: " + id);
         }
-        Role roleByName = iRolePersistencePort.getRoleByName(role.getName());
-        if (roleByName != null && !roleByName.getId().equals(role.getId())) {
+
+        Optional<Role> existingRoleByNameOpt = iRolePersistencePort.getRoleByName(role.getName());
+
+        if (existingRoleByNameOpt.isPresent() && !existingRoleByNameOpt.get().getId().equals(id)) {
             throw new RoleAlreadyExistsException("A different role already uses the name: " + role.getName());
         }
+        role.setId(id);
         iRolePersistencePort.updateRole(role);
     }
 
     @Override
     public void deleteRole(Long id) {
-        if (iRolePersistencePort.getRole(id) == null) {
+        if (iRolePersistencePort.getRole(id).isEmpty()) {
             throw new RoleNotFoundException("Cannot delete: Role not found with ID: " + id);
         }
         if (iRolePersistencePort.isRoleAssignedToUsers(id)) {
