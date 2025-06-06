@@ -20,27 +20,27 @@ public class CategoryJpaAdapter implements ICategoryPersistencePort {
     private final ICategoryEntityMapper categoryEntityMapper;
 
     @Override
-    public Category save(Category category) {
+    public Category saveCategory(Category category) {
         return categoryEntityMapper.toModel(categoryRepository.save(categoryEntityMapper.toEntity(category)));
     }
 
     @Override
-    public Optional<Category> findById(Long id) {
+    public Optional<Category> findCategoryById(Long id) {
         return categoryRepository.findById(id).map(categoryEntityMapper::toModel);
     }
 
     @Override
-    public Optional<Category> findByName(String name) {
+    public Optional<Category> findCategoryByName(String name) {
         return categoryRepository.findByName(name).map(categoryEntityMapper::toModel);
     }
 
     @Override
-    public List<Category> findAll() {
+    public List<Category> findAllCategories() {
         return categoryEntityMapper.toModelList(categoryRepository.findAll());
     }
 
     @Override
-    public void delete(Long id) {
+    public void deleteCategory(Long id) {
         categoryRepository.deleteById(id);
     }
 
