@@ -3,9 +3,13 @@ package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 import com.plazoleta.plazoleta_microservice.domain.spi.IOrderPersistencePort;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.OrderNotFoundException;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderDishEntity;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderDishId;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IOrderEntityMapper;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderDishRepository;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,26 +26,44 @@ import java.util.Optional;
 public class OrderJpaAdapter implements IOrderPersistencePort {
 
     private final IOrderRepository orderRepository;
+    private final IDishRepository dishRepository;
+    private final IOrderDishRepository orderDishRepository;
     private final IOrderEntityMapper orderEntityMapper;
-
 
     @Override
     public void saveOrder(Order order) {
-        OrderEntity entity = orderEntityMapper.toOrderEntity(order);
+        OrderEntity orderEntity = orderEntityMapper.toEntity(order);
+        OrderEntity savedOrder = orderRepository.save(orderEntity);
+        List<OrderDishEntity> dishEntities = order.getDishes().stream()
+                .map(orderDish -> {
+                    OrderDishEntity dishEntity = new OrderDishEntity();
 
-        orderRepository.save(entity);
+                    DishEntity dish = dishRepository.findById(orderDish.getDishId())
+                            .orElseThrow(() -> new RuntimeException("Dish not found"));
+
+                    dishEntity.setOrder(savedOrder);
+                    dishEntity.setDish(dish);
+                    dishEntity.setQuantity(orderDish.getQuantity());
+                    dishEntity.setId(new OrderDishId(savedOrder.getId(), dish.getId()));
+
+                    return dishEntity;
+                })
+                .toList();
+
+
+        orderDishRepository.saveAll(dishEntities);
     }
 
     @Override
     public Optional<Order> findOrderById(Long orderId) {
         return orderRepository.findById(orderId)
-                .map(orderEntityMapper::toOrder);
+                .map(orderEntityMapper::toDomain);
     }
 
     @Override
     public List<Order> findOrdersByCustomerId(Long customerId) {
         return orderRepository.findByCustomerId(customerId).stream()
-                .map(orderEntityMapper::toOrder)
+                .map(orderEntityMapper::toDomain)
                 .toList();
     }
 
@@ -60,12 +82,13 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
         Page<OrderEntity> orderPage = orderRepository.findAllByRestaurantIdAndStatus(restaurantId, status, PageRequest.of(pageIndex, elementsPerPage, Sort.by(Sort.Direction.ASC, "orderDate")));
 
         return orderPage.getContent().stream()
-                .map(orderEntityMapper::toOrder)
+                .map(orderEntityMapper::toDomain)
                 .toList();
     }
 
     @Override
     public void updateOrder(Order order) {
-        orderRepository.save(orderEntityMapper.toOrderEntity(order));
+        OrderEntity entity = orderEntityMapper.toEntity(order);
+        orderRepository.save(entity);
     }
 }
