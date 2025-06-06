@@ -23,14 +23,8 @@ import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter.Categ
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter.DishJpaAdapter;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter.OrderJpaAdapter;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter.RestaurantJpaAdapter;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.ICategoryEntityMapper;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IDishEntityMapper;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IOrderEntityMapper;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IRestaurantEntityMapper;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.ICategoryRepository;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderRepository;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IRestaurantRepository;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.*;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,9 +47,13 @@ public class BeanConfiguration {
     private final IDishRequestMapper dishRequestMapper;
     private final IDishResponseMapper dishResponseMapper;
     private final IDishUpdateRequestMapper dishUpdateRequestMapper;
+    private final IOrderDishRequestMapper orderDishRequestMapper;
     private final IOrderRepository orderRepository;
+    private final IOrderRequestMapper orderRequestMapper;
     private final IOrderResponseMapper orderResponseMapper;
     private final IOrderEntityMapper orderEntityMapper;
+    private final IOrderDishRepository orderDishRepository;
+    private final IOrderDishEntityMapper orderDishEntityMapper;
     private final IUserFeignClient userFeignClient;
     private final IAuthenticatedUserPort authenticatedUserPort;
 
@@ -107,13 +105,8 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public OrderRequestMapper orderRequestMapper() {
-        return new OrderRequestMapper();
-    }
-
-    @Bean
     public IOrderPersistencePort orderPersistencePort() {
-        return new OrderJpaAdapter(orderRepository, orderEntityMapper);
+        return new OrderJpaAdapter(orderRepository, dishRepository,orderDishRepository, orderEntityMapper);
     }
 
     @Bean
@@ -124,7 +117,7 @@ public class BeanConfiguration {
 
     @Bean
     public IOrderHandler orderHandler(IOrderServicePort orderServicePort) {
-        return new OrderHandlerImpl(orderServicePort,  orderRequestMapper(), orderResponseMapper);
+        return new OrderHandlerImpl(orderServicePort, orderRequestMapper, orderResponseMapper);
     }
 
 }
