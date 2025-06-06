@@ -1,7 +1,5 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
-import com.plazoleta.plazoleta_microservice.domain.validator.DishValidator;
-
 public class Dish {
     private final Long id;
     private final String name;
@@ -13,8 +11,6 @@ public class Dish {
     private final Long restaurantId;
 
     private Dish(Builder builder) {
-        DishValidator.validate(builder.name, builder.price, builder.description, builder.imageUrl, builder.category, builder.restaurantId);
-
         this.id = builder.id;
         this.name = builder.name;
         this.price = builder.price;
@@ -36,7 +32,7 @@ public class Dish {
         private String description;
         private String imageUrl;
         private Category category;
-        private boolean active = true;
+        private boolean active;
         private Long restaurantId;
 
         public Builder id(Long id) {
@@ -109,6 +105,32 @@ public class Dish {
                 .category(this.category)
                 .restaurantId(this.restaurantId)
                 .active(false)
+                .build();
+    }
+
+    public Dish withCategory(Category newCategory) {
+        return Dish.builder()
+                .id(this.id)
+                .name(this.name)
+                .price(this.price)
+                .description(this.description)
+                .imageUrl(this.imageUrl)
+                .restaurantId(this.restaurantId)
+                .category(newCategory)
+                .active(this.active)
+                .build();
+    }
+
+    public Dish withPriceAndDescription(Double price, String description) {
+        return Dish.builder()
+                .id(this.id)
+                .name(this.name)
+                .price(price)
+                .description(description)
+                .imageUrl(this.imageUrl)
+                .restaurantId(this.restaurantId)
+                .category(this.category)
+                .active(this.active)
                 .build();
     }
 

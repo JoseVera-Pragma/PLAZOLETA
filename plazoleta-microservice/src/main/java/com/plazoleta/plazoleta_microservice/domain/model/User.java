@@ -9,19 +9,24 @@ public class User {
     private String email;
     private String password;
     private String role;
+    private Long restaurantId;
+
+    public User() { }
 
     private User(Builder builder) {
         this.firstName = builder.firstName;
         this.lastName = builder.lastName;
         this.identityNumber = builder.identityNumber;
-        this.phoneNumber = builder.phoneNumber;
         this.dateOfBirth = builder.dateOfBirth;
         this.email = builder.email;
+        this.phoneNumber = builder.phoneNumber;
         this.password = builder.password;
         this.role = builder.role;
+        this.restaurantId = builder.restaurantId;
     }
 
-    public User() {
+    public static Builder builder() {
+        return new Builder();
     }
 
     public String getDateOfBirth() {
@@ -56,6 +61,10 @@ public class User {
         return role;
     }
 
+    public Long getRestaurantId() {
+        return restaurantId;
+    }
+
     public static class Builder {
         private String firstName;
         private String lastName;
@@ -65,6 +74,7 @@ public class User {
         private String email;
         private String password;
         private String role;
+        private Long restaurantId;
 
         public Builder firstName(String firstName) {
             this.firstName = firstName;
@@ -103,6 +113,11 @@ public class User {
 
         public Builder role(String role) {
             this.role = role;
+            return this;
+        }
+
+        public Builder restaurantId(Long restaurantId) {
+            this.restaurantId = restaurantId;
             return this;
         }
 
