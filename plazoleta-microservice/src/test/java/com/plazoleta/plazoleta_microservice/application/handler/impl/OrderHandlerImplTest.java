@@ -3,12 +3,12 @@ package com.plazoleta.plazoleta_microservice.application.handler.impl;
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
-import com.plazoleta.plazoleta_microservice.domain.spi.IAuthenticatedUserPort;
+import com.plazoleta.plazoleta_microservice.application.mapper.IOrderRequestMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.IOrderResponseMapper;
-import com.plazoleta.plazoleta_microservice.application.mapper.OrderRequestMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -28,7 +28,7 @@ class OrderHandlerImplTest {
     private IOrderServicePort orderServicePort;
 
     @Mock
-    private OrderRequestMapper orderRequestMapper;
+    private IOrderRequestMapper orderRequestMapper;
 
     @Mock
     private IOrderResponseMapper orderResponseMapper;
@@ -51,15 +51,18 @@ class OrderHandlerImplTest {
         requestDto.setIdRestaurant(10L);
         requestDto.setDishes(dishes);
 
+
+        Restaurant restaurant = Restaurant.builder().id(10L).build();
+
         Order order = Order.builder()
-                .restaurantId(10L)
+                .restaurant(restaurant)
                 .build();
 
-        when(orderRequestMapper.toDomain(requestDto)).thenReturn(order);
+        when(orderRequestMapper.toOrder(requestDto)).thenReturn(order);
 
         orderHandler.createOrder(requestDto);
 
-        verify(orderRequestMapper).toDomain(requestDto);
+        verify(orderRequestMapper).toOrder(requestDto);
         verify(orderServicePort).createOrder(order);
     }
 
