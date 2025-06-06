@@ -8,7 +8,7 @@ import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDat
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.*;
 import com.plazoleta.plazoleta_microservice.infrastructure.exception.CustomerHasActiveOrderException;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.OrderNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 import com.plazoleta.plazoleta_microservice.infrastructure.exception.UserServiceUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
