@@ -9,11 +9,11 @@ public interface IOrderServicePort {
 
     void createOrder(Order order);
 
-    List<Order> getOrdersByClientId(Long clientId);
+    List<Order> getOrdersByCustomerId(Long customerId);
 
-    Order getOrderById(Long orderId);
+    Order findOrderById(Long orderId);
 
-    List<Order> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
+    List<Order> findOrdersByStatusForAuthenticatedEmployee(OrderStatus status, int pageIndex, int elementsPerPage);
 
-    void assignOrder(Long orderId, Long employedId);
+    void assignOrder(Long orderId);
 }

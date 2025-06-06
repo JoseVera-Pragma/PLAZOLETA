@@ -1,5 +1,7 @@
-package com.plazoleta.plazoleta_microservice.application.handler;
+package com.plazoleta.plazoleta_microservice.domain.spi;
 
-public interface IAuthenticatedUserHandler {
-    Long getCurrentUserId();
+import java.util.Optional;
+
+public interface IAuthenticatedUserPort {
+    Optional<Long> getCurrentUserId();
 }

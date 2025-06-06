@@ -4,18 +4,19 @@ import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface IOrderPersistencePort {
 
     void saveOrder(Order order);
 
-    Order getOrderById(Long orderId);
+    Optional<Order> findOrderById(Long orderId);
 
-    List<Order> getOrdersByCustomerId(Long customerId);
+    List<Order> findOrdersByCustomerId(Long customerId);
 
     boolean customerHasOrdersInProcess(Long customerId);
 
-    List<Order> getOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
+    List<Order> findOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
 
     void updateOrder(Order order);
 }

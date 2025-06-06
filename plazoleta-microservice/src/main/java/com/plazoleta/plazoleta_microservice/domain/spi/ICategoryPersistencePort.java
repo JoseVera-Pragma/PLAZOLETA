@@ -6,10 +6,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ICategoryPersistencePort {
-    Category save(Category category);
-    Optional<Category> findById(Long id);
-    Optional<Category> findByName(String name);
-    List<Category> findAll();
-    void delete(Long id);
+    Category saveCategory(Category category);
+
+    Optional<Category> findCategoryById(Long id);
+
+    Optional<Category> findCategoryByName(String name);
+
+    List<Category> findAllCategories();
+
+    void deleteCategory(Long id);
+
     boolean existsDishWithCategoryId(Long categoryId);
 }
