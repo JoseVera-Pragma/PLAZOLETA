@@ -1,10 +1,15 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
+import com.plazoleta.plazoleta_microservice.domain.model.OrderDish;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IOrderEntityMapper;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderDishRepository;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +34,12 @@ class OrderJpaAdapterTest {
     private IOrderRepository orderRepository;
 
     @Mock
+    private IDishRepository dishRepository;
+
+    @Mock
+    private IOrderDishRepository orderDishRepository;
+
+    @Mock
     private IOrderEntityMapper orderEntityMapper;
 
     @InjectMocks
@@ -41,36 +52,48 @@ class OrderJpaAdapterTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
+        Restaurant restaurant = Restaurant.builder().id(10L).build();
+
         order = Order.builder()
                 .id(1L)
                 .customerId(100L)
-                .restaurantId(10L)
+                .restaurant(restaurant)
                 .status(OrderStatus.PENDING)
                 .orderDate(LocalDateTime.now())
+                .dishes(List.of(new OrderDish(5L,2)))
                 .build();
 
-        RestaurantEntity restaurantEntity = new RestaurantEntity();
         orderEntity = new OrderEntity();
         orderEntity.setId(1L);
         orderEntity.setCustomerId(100L);
-        orderEntity.setRestaurant(restaurantEntity);
+        orderEntity.setRestaurant(new RestaurantEntity());
         orderEntity.setStatus(OrderStatus.PENDING);
         orderEntity.setOrderDate(LocalDateTime.now());
     }
 
     @Test
     void testSaveOrder() {
-        when(orderEntityMapper.toOrderEntity(order)).thenReturn(orderEntity);
+        DishEntity dishEntity = new DishEntity();
+        dishEntity.setId(5L);
+
+        OrderEntity savedOrderEntity = new OrderEntity();
+        savedOrderEntity.setId(1L);
+
+        when(orderEntityMapper.toEntity(order)).thenReturn(orderEntity);
+        when(orderRepository.save(orderEntity)).thenReturn(savedOrderEntity);
+        when(dishRepository.findById(5L)).thenReturn(Optional.of(dishEntity));
 
         orderJpaAdapter.saveOrder(order);
 
         verify(orderRepository).save(orderEntity);
+        verify(dishRepository).findById(5L);
+        verify(orderDishRepository).saveAll(anyList());
     }
 
     @Test
     void testFindOrderByIdFound() {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(orderEntity));
-        when(orderEntityMapper.toOrder(orderEntity)).thenReturn(order);
+        when(orderEntityMapper.toDomain(orderEntity)).thenReturn(order);
 
         Optional<Order> result = orderJpaAdapter.findOrderById(1L);
 
@@ -92,7 +115,7 @@ class OrderJpaAdapterTest {
         List<OrderEntity> entities = List.of(orderEntity);
 
         when(orderRepository.findByCustomerId(100L)).thenReturn(entities);
-        when(orderEntityMapper.toOrder(orderEntity)).thenReturn(order);
+        when(orderEntityMapper.toDomain(orderEntity)).thenReturn(order);
 
         List<Order> result = orderJpaAdapter.findOrdersByCustomerId(100L);
 
@@ -118,7 +141,7 @@ class OrderJpaAdapterTest {
     void testFindOrdersByStatusAndRestaurantId() {
         Page<OrderEntity> page = new PageImpl<>(List.of(orderEntity));
         when(orderRepository.findAllByRestaurantIdAndStatus(eq(10L), eq(OrderStatus.PENDING), any(PageRequest.class))).thenReturn(page);
-        when(orderEntityMapper.toOrder(orderEntity)).thenReturn(order);
+        when(orderEntityMapper.toDomain(orderEntity)).thenReturn(order);
 
         List<Order> result = orderJpaAdapter.findOrdersByStatusAndRestaurantId(10L, OrderStatus.PENDING, 0, 10);
 
@@ -128,7 +151,7 @@ class OrderJpaAdapterTest {
 
     @Test
     void testUpdateOrder() {
-        when(orderEntityMapper.toOrderEntity(order)).thenReturn(orderEntity);
+        when(orderEntityMapper.toEntity(order)).thenReturn(orderEntity);
 
         orderJpaAdapter.updateOrder(order);
 
