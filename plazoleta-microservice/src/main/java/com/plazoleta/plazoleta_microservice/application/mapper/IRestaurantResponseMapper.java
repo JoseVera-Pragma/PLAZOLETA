@@ -9,18 +9,10 @@ import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
-        unmappedSourcePolicy = ReportingPolicy.IGNORE,
-        uses = {IValueObjectMapper.class}
+        unmappedSourcePolicy = ReportingPolicy.IGNORE
 )
 public interface IRestaurantResponseMapper {
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "nit", source = "nit")
-    @Mapping(target = "phoneNumber", source = "phoneNumber")
     Restaurant toRestaurant(RestaurantResponseDto dto);
 
-
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "nit", source = "nit")
-    @Mapping(target = "phoneNumber", source = "phoneNumber")
     RestaurantResponseDto toRestaurantResponseDto(Restaurant restaurant);
 }

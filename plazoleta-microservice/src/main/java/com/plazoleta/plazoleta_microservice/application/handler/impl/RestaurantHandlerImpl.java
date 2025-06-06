@@ -6,14 +6,10 @@ import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantR
 import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandler;
 import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantRequestMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantResponseMapper;
-import com.plazoleta.plazoleta_microservice.application.mapper.IRestauranteResumenResponseMapper;
+import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantResumeResponseMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,26 +23,18 @@ public class RestaurantHandlerImpl implements IRestaurantHandler {
     private final IRestaurantServicePort restaurantServicePort;
     private final IRestaurantRequestMapper restaurantRequestMapper;
     private final IRestaurantResponseMapper restaurantResponseMapper;
-    private final IRestauranteResumenResponseMapper restauranteResumenResponseMapper;
+    private final IRestaurantResumeResponseMapper restaurantResumeResponseMapper;
 
     @Override
     public RestaurantResponseDto createRestaurant(RestaurantRequestDto restaurantRequestDto) {
-
         Restaurant restaurant = restaurantRequestMapper.toRestaurant(restaurantRequestDto);
-
-        restaurantServicePort.createRestaurant(restaurant);
-
-        return restaurantResponseMapper.toRestaurantResponseDto(restaurant);
+        Restaurant restaurantResponse = restaurantServicePort.createRestaurant(restaurant);
+        return restaurantResponseMapper.toRestaurantResponseDto(restaurantResponse);
     }
 
     @Override
-    public Page<RestaurantResumeResponseDto> restaurantList(int pageIndex, int elementsPerPage) {
-        PageRequest pageable = PageRequest.of(pageIndex, elementsPerPage, Sort.by("name").ascending());
-
-        Page<Restaurant> restaurantesPage = restaurantServicePort.findAll(pageable);
-
-        List<RestaurantResumeResponseDto> dtos = restauranteResumenResponseMapper.toResumenDtoList(restaurantesPage.getContent());
-
-        return new PageImpl<>(dtos, pageable, restaurantesPage.getTotalElements());
+    public List<RestaurantResumeResponseDto> restaurantList(int pageIndex, int elementsPerPage) {
+        List<Restaurant> restaurantsPage = restaurantServicePort.findAllRestaurants(pageIndex,elementsPerPage);
+        return restaurantResumeResponseMapper.toResumeDtoList(restaurantsPage);
     }
 }
