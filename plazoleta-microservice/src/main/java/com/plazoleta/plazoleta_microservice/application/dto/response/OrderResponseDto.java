@@ -10,8 +10,8 @@ import lombok.Setter;
 @Setter
 public class OrderResponseDto {
     private Long id;
-    private Long idCustomer;
-    private Long idChef;
+    private Long customerId;
+    private Long chefId;
     private String orderDate;
     private OrderStatus status;
     private String statusDescription;
