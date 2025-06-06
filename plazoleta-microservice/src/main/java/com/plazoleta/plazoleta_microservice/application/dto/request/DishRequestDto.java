@@ -12,6 +12,9 @@ import lombok.*;
 @NoArgsConstructor
 public class DishRequestDto {
 
+    @NotNull(message = "Restaurant Id is required")
+    private Long restaurantId;
+
     @NotBlank(message = "Dish name is required")
     private String name;
 
