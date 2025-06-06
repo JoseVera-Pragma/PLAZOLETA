@@ -3,44 +3,43 @@ package com.plazoleta.plazoleta_microservice.domain.usecase;
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.DuplicateNitException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidUserRoleException;
-import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.model.User;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
-import com.plazoleta.plazoleta_microservice.domain.spi.IUserSecurityPort;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.plazoleta.plazoleta_microservice.domain.spi.IUserServiceClientPort;
+import com.plazoleta.plazoleta_microservice.domain.validator.RestaurantValidator;
+
+import java.util.List;
 
 public class RestaurantUseCase implements IRestaurantServicePort {
 
     private final IRestaurantPersistencePort restaurantPersistencePort;
-    private final IUserSecurityPort userSecurityPort;
+    private final IUserServiceClientPort userServiceClientPort;
 
-    public RestaurantUseCase(IRestaurantPersistencePort restaurantPersistencePort, IUserSecurityPort userSecurityPort) {
+    public RestaurantUseCase(IRestaurantPersistencePort restaurantPersistencePort, IUserServiceClientPort userSecurityPort) {
         this.restaurantPersistencePort = restaurantPersistencePort;
-        this.userSecurityPort = userSecurityPort;
+        this.userServiceClientPort = userSecurityPort;
     }
 
     @Override
-    public void createRestaurant(Restaurant restaurant) {
-        User owner = userSecurityPort.getUserById(restaurant.getIdOwner());
-        if (owner == null) {
-            throw new UserNotFoundException("User not found");
-        }
+    public Restaurant createRestaurant(Restaurant restaurant) {
+        User owner = userServiceClientPort.findUserById(restaurant.getIdOwner());
 
         if (!"ROLE_OWNER".equalsIgnoreCase(owner.getRole())) {
             throw new InvalidUserRoleException("User does not have the required role");
         }
 
-        if (restaurantPersistencePort.existsByNit(restaurant.getNit())){
+        if (restaurantPersistencePort.existsRestaurantByNit(restaurant.getNit())){
             throw new DuplicateNitException("A restaurant with the NIT '" + restaurant.getNit() + "' already exists.");
         }
 
-        restaurantPersistencePort.saveRestaurant(restaurant);
+        RestaurantValidator.validateRestaurant(restaurant);
+
+        return restaurantPersistencePort.saveRestaurant(restaurant);
     }
 
     @Override
-    public Page<Restaurant> findAll(Pageable pageable){
-        return restaurantPersistencePort.findAll(pageable);
+    public List<Restaurant> findAllRestaurants(int pageIndex, int elementsPerPage){
+        return restaurantPersistencePort.findAllRestaurants(pageIndex, elementsPerPage);
     }
 }

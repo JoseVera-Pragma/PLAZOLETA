@@ -2,30 +2,38 @@ package com.plazoleta.plazoleta_microservice.domain.validator;
 
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDataException;
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
+import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 
 public class DishValidator {
-    public static void validate(String name, Double price, String description, String imageUrl, Category category, Long restaurantId) {
-        if (name == null || name.isBlank()) {
-            throw new InvalidDishDataException("The name of the dish is mandatory.");
+    private DishValidator() {}
+
+    public static void validate(Dish dish) {
+        if (dish == null) {
+            throw new InvalidDishDataException("Dish cannot be null.");
         }
 
-        if (price <= 0) {
-            throw new InvalidDishDataException("The price of the dish must be a positive integer greater than 0.");
+        if (dish.getName() == null || dish.getName().isBlank()) {
+            throw new InvalidDishDataException("Dish name is required.");
         }
 
-        if (description == null || description.isBlank()) {
-            throw new InvalidDishDataException("The description of the dish is mandatory.");
+        if (dish.getPrice() == null || dish.getPrice() <= 0) {
+            throw new InvalidDishDataException("Dish price must be greater than 0.");
         }
 
-        if (imageUrl == null || imageUrl.isBlank()) {
-            throw new InvalidDishDataException("The URL of the image of the plate is mandatory.");
+        if (dish.getDescription() == null || dish.getDescription().isBlank()) {
+            throw new InvalidDishDataException("Dish description is required.");
         }
 
-        if (category == null || category.getName().isBlank()) {
-            throw new InvalidDishDataException("The plate category is mandatory.");
+        if (dish.getImageUrl() == null || dish.getImageUrl().isBlank()) {
+            throw new InvalidDishDataException("Dish image URL is required.");
         }
 
-        if (restaurantId == null) {
+        Category category = dish.getCategory();
+        if (category == null || category.getName() == null || category.getName().isBlank()) {
+            throw new InvalidDishDataException("Dish must be linked to a restaurant.");
+        }
+
+        if (dish.getRestaurantId() == null) {
             throw new InvalidDishDataException("The dish must be associated with a restaurant.");
         }
     }

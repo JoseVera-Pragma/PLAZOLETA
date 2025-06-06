@@ -20,17 +20,17 @@ public class CategoryUseCase implements ICategoryServicePort {
 
     @Override
     public Category saveCategory(Category category) {
-        if (categoryPersistencePort.findByName(category.getName()).isPresent()) {
+        if (categoryPersistencePort.findCategoryByName(category.getName()).isPresent()) {
             throw new CategoryAlreadyExistsException("Category with name '" + category.getName() + "' already exists");
         }
-        return categoryPersistencePort.save(category);
+        return categoryPersistencePort.saveCategory(category);
     }
 
     @Override
     public Category updateCategory(Long id, Category updatedCategory) {
-        categoryPersistencePort.findById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
+        categoryPersistencePort.findCategoryById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
 
-        Optional<Category> oldCategory = categoryPersistencePort.findByName(updatedCategory.getName());
+        Optional<Category> oldCategory = categoryPersistencePort.findCategoryByName(updatedCategory.getName());
         if (oldCategory.isPresent() && !oldCategory.get().getId().equals(id)) {
             throw new CategoryAlreadyExistsException("Category whit name " + oldCategory.get().getName() + " already exists");
         }
@@ -38,30 +38,30 @@ public class CategoryUseCase implements ICategoryServicePort {
 
         Category newCategory = new Category(id, updatedCategory.getName(), updatedCategory.getDescription());
 
-        return categoryPersistencePort.save(newCategory);
+        return categoryPersistencePort.saveCategory(newCategory);
     }
 
     @Override
     public Category getCategoryById(Long id) {
-        return categoryPersistencePort.findById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
+        return categoryPersistencePort.findCategoryById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
     }
 
     @Override
     public Category getCategoryByName(String name) {
-        return categoryPersistencePort.findByName(name).orElseThrow(() -> new CategoryNotFoundException("Category with name " + name + " not found"));
+        return categoryPersistencePort.findCategoryByName(name).orElseThrow(() -> new CategoryNotFoundException("Category with name " + name + " not found"));
     }
 
     @Override
     public List<Category> getAllCategories() {
-        return categoryPersistencePort.findAll();
+        return categoryPersistencePort.findAllCategories();
     }
 
     @Override
     public void deleteCategoryById(Long id) {
-        categoryPersistencePort.findById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
+        categoryPersistencePort.findCategoryById(id).orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
         if (categoryPersistencePort.existsDishWithCategoryId(id)) {
             throw new CategoryInUseException("Category with ID " + id + " is currently in use by one or more dishes");
         }
-        categoryPersistencePort.delete(id);
+        categoryPersistencePort.deleteCategory(id);
     }
 }

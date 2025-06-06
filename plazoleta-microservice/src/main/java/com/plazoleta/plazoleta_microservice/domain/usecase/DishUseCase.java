@@ -5,14 +5,12 @@ import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryNo
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
-import com.plazoleta.plazoleta_microservice.domain.spi.ICategoryPersistencePort;
-import com.plazoleta.plazoleta_microservice.domain.spi.IDishPersistencePort;
-import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.plazoleta.plazoleta_microservice.domain.spi.*;
+import com.plazoleta.plazoleta_microservice.domain.validator.DishValidator;
 
 import java.util.List;
 
@@ -20,96 +18,82 @@ public class DishUseCase implements IDishServicePort {
     private final IDishPersistencePort dishPersistencePort;
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final ICategoryPersistencePort categoryPersistencePort;
+    private final IAuthenticatedUserPort authenticatedUserPort;
 
-    public DishUseCase(ICategoryPersistencePort categoryPersistencePort, IDishPersistencePort dishPersistencePort, IRestaurantPersistencePort restaurantPersistencePort) {
+    public DishUseCase(ICategoryPersistencePort categoryPersistencePort, IDishPersistencePort dishPersistencePort, IRestaurantPersistencePort restaurantPersistencePort, IAuthenticatedUserPort authenticatedUserPort) {
         this.categoryPersistencePort = categoryPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
+        this.authenticatedUserPort = authenticatedUserPort;
     }
 
     @Override
-    public Dish save(Long ownerId, Dish dish) {
-        Restaurant restaurant = restaurantPersistencePort
-                .getById(dish.getRestaurantId());
+    public Dish saveDish(Dish dish) {
+        Restaurant restaurant = restaurantPersistencePort.findRestaurantById(dish.getRestaurantId()).orElseThrow(
+                () -> new RestaurantNotFoundException("Restaurant not found."));
 
-        if (restaurant == null) {
-            throw new RestaurantNotFoundException("Restaurant with ID " + dish.getRestaurantId() + " not found");
-        }
+        Long ownerId = authenticatedUserPort.getCurrentUserId().orElseThrow(
+                () -> new UserNotFoundException("User not found."));
 
         if (!ownerId.equals(restaurant.getIdOwner())) {
             throw new UnauthorizedOwnerException("Owner ID " + ownerId + " is not authorized to create dishes for restaurant with ID " + dish.getRestaurantId());
         }
 
-        Category category = categoryPersistencePort.findByName(dish.getCategory().getName()).orElseThrow(() ->
+        Category category = categoryPersistencePort.findCategoryByName(dish.getCategory().getName()).orElseThrow(() ->
                 new CategoryNotFoundException("Category with name '" + dish.getCategory().getName() + "' not found"));
 
-        Dish dishToSave = Dish.builder()
-                .id(dish.getId())
-                .name(dish.getName())
-                .description(dish.getDescription())
-                .price(dish.getPrice())
-                .restaurantId(dish.getRestaurantId())
-                .imageUrl(dish.getImageUrl())
-                .category(category)
-                .build();
+        Dish dishToSave = dish.withCategory(category).activate();
+
+        DishValidator.validate(dishToSave);
+
         return dishPersistencePort.saveDish(dishToSave);
     }
 
     @Override
-    public Dish getById(Long id) {
-        return dishPersistencePort.getById(id);
+    public Dish findDishById(Long id) {
+        return dishPersistencePort.findDishById(id).orElseThrow(() -> new DishNotFoundException("Dish not found."));
     }
 
     @Override
-    public void update(Long ownerId, Dish dish) {
+    public void updateDishPriceAndDescription(Long dishId, Dish dish) {
 
-        Dish existingDish = dishPersistencePort.getById(dish.getId());
-
-        if (existingDish == null) {
-            throw new DishNotFoundException("Dish with ID " + dish.getId() + " not found");
-        }
+        Dish existingDish = dishPersistencePort.findDishById(dishId).orElseThrow(
+                () -> new DishNotFoundException("Dish with ID " + dishId + " not found")
+        );
 
         Restaurant restaurant = restaurantPersistencePort
-                .getById(dish.getRestaurantId());
+                .findRestaurantById(existingDish.getRestaurantId()).orElseThrow(
+                        () -> new RestaurantNotFoundException("Restaurant with ID " + existingDish.getRestaurantId() + " not found")
+                );
 
-        if (restaurant == null) {
-            throw new RestaurantNotFoundException("Restaurant with ID " + dish.getRestaurantId() + " not found");
-        }
+        Long ownerId = authenticatedUserPort.getCurrentUserId().orElseThrow(
+                () -> new UserNotFoundException("User not found."));
 
         if (!ownerId.equals(restaurant.getIdOwner())) {
-            throw new UnauthorizedOwnerException("Owner ID " + ownerId + " is not authorized to update dishes for restaurant with ID " + dish.getRestaurantId());
+            throw new UnauthorizedOwnerException("Owner ID " + ownerId + " is not authorized to updateDishPriceAndDescription dishes for restaurant with ID " + dish.getRestaurantId());
         }
 
-        Dish updatedDish = Dish.builder()
-                .id(existingDish.getId())
-                .name(existingDish.getName())
-                .description(dish.getDescription())
-                .price(dish.getPrice())
-                .restaurantId(existingDish.getRestaurantId())
-                .imageUrl(existingDish.getImageUrl())
-                .category(existingDish.getCategory())
-                .build();
+        Dish updatedDish = existingDish.withPriceAndDescription(dish.getPrice(), dish.getDescription());
+
         dishPersistencePort.updateDish(updatedDish);
     }
 
     @Override
-    public void changeDishStatus(Long ownerId, Long dishId, boolean activate) {
+    public void changeDishStatus(Long dishId, boolean activate) {
 
-        Dish dish = dishPersistencePort.getById(dishId);
-
-        if (dish == null) {
-            throw new DishNotFoundException("Dish with ID " + dishId + " not found");
-        }
+        Dish dish = dishPersistencePort.findDishById(dishId).orElseThrow(
+                () -> new DishNotFoundException("Dish with ID " + dishId + " not found")
+        );
 
         Restaurant restaurant = restaurantPersistencePort
-                .getById(dish.getRestaurantId());
+                .findRestaurantById(dish.getRestaurantId()).orElseThrow(
+                        () -> new RestaurantNotFoundException("Restaurant with ID " + dish.getRestaurantId() + " not found")
+                );
 
-        if (restaurant == null) {
-            throw new RestaurantNotFoundException("Restaurant with ID " + dish.getRestaurantId() + " not found");
-        }
-
+        Long ownerId = authenticatedUserPort.getCurrentUserId().orElseThrow(
+                () -> new UserNotFoundException("User not found."));
         if (!ownerId.equals(restaurant.getIdOwner())) {
-            throw new UnauthorizedOwnerException("Owner ID " + ownerId + " is not authorized to update dishes for restaurant with ID " + dish.getRestaurantId());
+            throw new UnauthorizedOwnerException("Owner ID " + ownerId + " is not authorized to updateDishPriceAndDescription dishes for restaurant with ID " + dish.getRestaurantId());
         }
 
         Dish updatedDish = activate ? dish.activate() : dish.deactivate();
@@ -118,12 +102,16 @@ public class DishUseCase implements IDishServicePort {
     }
 
     @Override
-    public Page<Dish> findAllByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, Pageable pageable) {
-        return dishPersistencePort.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
-    }
+    public List<Dish> findAllDishesByRestaurantIdAndCategoryId(Long restaurantId,Long categoryId, int pageIndex, int elementsPerPage) {
 
-    @Override
-    public List<Dish> getDishesByRestaurantId(Long restaurantId) {
-        return dishPersistencePort.getDishesByRestaurantId(restaurantId);
+        categoryPersistencePort.findCategoryById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with Id '" + categoryId + "' not found"));
+
+
+        restaurantPersistencePort.findRestaurantById(restaurantId).orElseThrow(
+                ()-> new RestaurantNotFoundException("Restaurant with ID " + restaurantId + " not found.")
+        );
+
+        return dishPersistencePort.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage );
     }
 }
