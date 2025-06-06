@@ -5,6 +5,7 @@ import com.plazoleta.plazoleta_microservice.application.dto.response.OrderRespon
 import com.plazoleta.plazoleta_microservice.application.handler.IOrderHandler;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,10 +13,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +29,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Orders", description = "Operaciones relacionadas con pedidos")
 @SecurityRequirement(name = "bearerAuth")
+@Validated
 public class OrderController {
 
     private final IOrderHandler orderHandler;
@@ -41,7 +46,7 @@ public class OrderController {
     })
     @PreAuthorize("hasRole('CUSTOMER')")
     @PostMapping
-    public ResponseEntity<Void> createOrder(@RequestBody CreateOrderRequestDto createOrderRequestDto) {
+    public ResponseEntity<Void> createOrder(@Valid @RequestBody CreateOrderRequestDto createOrderRequestDto) {
         orderHandler.createOrder(createOrderRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -54,12 +59,15 @@ public class OrderController {
                                     array = @ArraySchema(schema = @Schema(implementation = OrderResponseDto.class)))),
                     @ApiResponse(responseCode = "404", description = "No se encontraron datos")})
     @PreAuthorize("hasRole('EMPLOYED')")
-    @GetMapping("/getOrdersByStatus/{restaurantId}/{status}/{page}/{pageSize}")
-    public ResponseEntity<List<OrderResponseDto>> getOrdersByStatus(@PathVariable Long restaurantId,
-                                                                    @PathVariable OrderStatus status,
-                                                                    @PathVariable int page,
-                                                                    @PathVariable int pageSize) {
-        return ResponseEntity.ok(orderHandler.getOrdersByStatusAndRestaurantId(restaurantId, status, page, pageSize));
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<OrderResponseDto>> getOrdersByStatus(@PathVariable OrderStatus status,
+
+                                                                    @Parameter(description = "Número de página (inicia en 0)", example = "0")
+                                                                    @RequestParam(defaultValue = "0") @Min(0) int page,
+
+                                                                    @Parameter(description = "Cantidad de elementos por página", example = "10")
+                                                                    @RequestParam(defaultValue = "10") @Min(1) int size) {
+        return ResponseEntity.ok(orderHandler.findOrdersByStatusForAuthenticatedEmployee(status, page, size));
     }
 
     @Operation(summary = "Asignar una orden a un empleado",

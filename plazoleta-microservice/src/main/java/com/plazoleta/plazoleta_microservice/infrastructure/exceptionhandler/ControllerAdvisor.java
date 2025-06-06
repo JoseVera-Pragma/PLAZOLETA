@@ -3,13 +3,15 @@ package com.plazoleta.plazoleta_microservice.infrastructure.exceptionhandler;
 import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryAlreadyExistsException;
 import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryInUseException;
 import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryNotFoundException;
-import com.plazoleta.plazoleta_microservice.domain.exception.category.InvalidCategoryDataException;
+import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDataException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.*;
 import com.plazoleta.plazoleta_microservice.infrastructure.exception.CustomerHasActiveOrderException;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.DishesNotFoundException;
+import com.plazoleta.plazoleta_microservice.infrastructure.exception.OrderNotFoundException;
+import com.plazoleta.plazoleta_microservice.infrastructure.exception.UserServiceUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -33,7 +35,6 @@ import java.util.Map;
 public class ControllerAdvisor {
 
     @ExceptionHandler({
-            InvalidNitException.class,
             InvalidPhoneNumberException.class,
             InvalidRestaurantNameException.class,
             InvalidRestaurantAddressException.class,
@@ -43,7 +44,6 @@ public class ControllerAdvisor {
             InvalidUserRoleException.class,
             MissingNitException.class,
             MissingPhoneNumberException.class,
-            InvalidCategoryDataException.class,
             InvalidDishDataException.class
     })
     public ResponseEntity<ApiError> handleBadRequestDomainExceptions(RuntimeException ex, HttpServletRequest request) {
@@ -60,13 +60,13 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.BAD_REQUEST,"Missing parameter: " + ex.getParameterName(),request.getRequestURI());
     }
 
-    @ExceptionHandler({UserNotFoundException.class, CategoryNotFoundException.class})
+    @ExceptionHandler({UserNotFoundException.class,
+            CategoryNotFoundException.class,
+            DishNotFoundException.class,
+            RestaurantNotFoundException.class,
+            OrderNotFoundException.class
+    })
     public ResponseEntity<ApiError> handleNotFoundDomainExceptions(RuntimeException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
-    }
-
-    @ExceptionHandler(DishesNotFoundException.class)
-    public ResponseEntity<ApiError> handleDishesNotFound(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
     }
 
@@ -77,7 +77,6 @@ public class ControllerAdvisor {
 
     @ExceptionHandler({DuplicateNitException.class, CategoryAlreadyExistsException.class, CategoryInUseException.class, DataAccessException.class})
     public ResponseEntity<ApiError> handleDuplicateDomainExceptions(RuntimeException ex, HttpServletRequest request) {
-        System.err.println(ex);
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
@@ -87,6 +86,17 @@ public class ControllerAdvisor {
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 errors.put(error.getField(), error.getDefaultMessage())
         );
+        return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed: " + errors, request.getRequestURI());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String field = violation.getPropertyPath().toString();
+            String message = violation.getMessage();
+            errors.put(field, message);
+        });
         return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed: " + errors, request.getRequestURI());
     }
 
@@ -128,6 +138,11 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(UserServiceUnavailableException.class)
+    public ResponseEntity<ApiError> handleUserServiceUnavailable(UserServiceUnavailableException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneral(Exception ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + ex.getMessage(), request.getRequestURI());
@@ -142,5 +157,4 @@ public class ControllerAdvisor {
         apiError.setPath(path);
         return new ResponseEntity<>(apiError, status);
     }
-
 }

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Categorías", description = "Operaciones para gestionar las categorías de los platos solo accesible para usuarios con roles ADMIN y OWNER.")
 @SecurityRequirement(name = "bearerAuth")
+@Validated
 public class CategoryController {
     private final ICategoryHandler categoryHandler;
 
@@ -35,7 +37,7 @@ public class CategoryController {
     })
     @PostMapping
     public ResponseEntity<CategoryResponseDto> createCategory(
-            @Validated @RequestBody CategoryRequestDto categoryRequestDto
+            @Valid @RequestBody CategoryRequestDto categoryRequestDto
     ) {
         CategoryResponseDto response = categoryHandler.createCategory(categoryRequestDto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
