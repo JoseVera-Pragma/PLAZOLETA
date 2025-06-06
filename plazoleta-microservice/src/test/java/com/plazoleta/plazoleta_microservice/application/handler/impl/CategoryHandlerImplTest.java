@@ -14,7 +14,8 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 class CategoryHandlerImplTest {
@@ -39,7 +40,7 @@ class CategoryHandlerImplTest {
     @Test
     void createCategory_shouldReturnCategoryResponseDto() {
         CategoryRequestDto requestDto = new CategoryRequestDto();
-        Category category = new Category(1L,"Name","Description");
+        Category category = new Category(1L, "Name", "Description");
         CategoryResponseDto responseDto = new CategoryResponseDto();
 
         when(categoryRequestMapper.toCategory(requestDto)).thenReturn(category);
@@ -59,7 +60,7 @@ class CategoryHandlerImplTest {
     @Test
     void getCategoryById_shouldReturnCategoryResponseDto() {
         Long id = 1L;
-        Category category = new Category(1L,"Name","Description");
+        Category category = new Category(1L, "Name", "Description");
         CategoryResponseDto responseDto = new CategoryResponseDto();
 
         when(categoryServicePort.getCategoryById(id)).thenReturn(category);
@@ -76,8 +77,8 @@ class CategoryHandlerImplTest {
 
     @Test
     void getAllCategories_shouldReturnListOfCategoryResponseDto() {
-        List<Category> categories = List.of(new Category(1L,"Name","Description")
-, new Category(1L,"Name","Description"));
+        List<Category> categories = List.of(new Category(1L, "Name", "Description")
+                , new Category(1L, "Name", "Description"));
         List<CategoryResponseDto> responseDtos = List.of(new CategoryResponseDto(), new CategoryResponseDto());
 
         when(categoryServicePort.getAllCategories()).thenReturn(categories);
@@ -97,7 +98,7 @@ class CategoryHandlerImplTest {
     void updateCategory_shouldReturnCategoryResponseDto() {
         Long id = 1L;
         CategoryRequestDto requestDto = new CategoryRequestDto();
-        Category category = new Category(1L,"Name","Description");
+        Category category = new Category(1L, "Name", "Description");
         CategoryResponseDto responseDto = new CategoryResponseDto();
 
         when(categoryRequestMapper.toCategory(requestDto)).thenReturn(category);

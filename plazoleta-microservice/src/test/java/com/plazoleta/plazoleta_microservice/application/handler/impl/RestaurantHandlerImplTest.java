@@ -5,7 +5,7 @@ import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantR
 import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResumeResponseDto;
 import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantRequestMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantResponseMapper;
-import com.plazoleta.plazoleta_microservice.application.mapper.IRestauranteResumenResponseMapper;
+import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantResumeResponseMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,14 +13,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.*;
 
 import java.util.List;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 
 class RestaurantHandlerImplTest {
+
     @Mock
     private IRestaurantServicePort restaurantServicePort;
 
@@ -31,107 +33,101 @@ class RestaurantHandlerImplTest {
     private IRestaurantResponseMapper restaurantResponseMapper;
 
     @Mock
-    private IRestauranteResumenResponseMapper restauranteResumenResponseMapper;
+    private IRestaurantResumeResponseMapper restaurantResumeResponseMapper;
 
     @InjectMocks
     private RestaurantHandlerImpl restaurantHandler;
 
-    private RestaurantRequestDto requestDto;
-    private Restaurant model;
-    private RestaurantResponseDto responseDto;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-
-        requestDto = RestaurantRequestDto.builder()
-                .name("Pizza House")
-                .nit("987654321")
-                .address("123 Main St")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.com")
-                .idOwner(1L)
-                .build();
-
-        model = new Restaurant.Builder()
-                .name("Pizza House")
-                .nit("987654321")
-                .address("123 Main St")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.com")
-                .idOwner(1L)
-                .build();
-
-        responseDto = RestaurantResponseDto.builder()
-                .name("Pizza House")
-                .nit("987654321")
-                .address("123 Main St")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.com").build();
     }
 
     @Test
-    void createRestaurantShouldReturnResponseDto() {
-        when(restaurantRequestMapper.toRestaurant(requestDto)).thenReturn(model);
-        doNothing().when(restaurantServicePort).createRestaurant(model);
-        when(restaurantResponseMapper.toRestaurantResponseDto(model)).thenReturn(responseDto);
+    void testCreateRestaurant() {
+        RestaurantRequestDto requestDto = new RestaurantRequestDto("My Restaurant", "231321321", "Address", "+545231321321", "logo.png", 1L);
+
+        Restaurant domainRestaurant = Restaurant.builder()
+                .name("My Restaurant")
+                .nit("231321321")
+                .urlLogo("logo.png")
+                .address("Address")
+                .phoneNumber("+545231321321")
+                .idOwner(1L)
+                .build();
+
+        Restaurant createdRestaurant = Restaurant.builder()
+                .id(10L)
+                .name("My Restaurant")
+                .nit("231321321")
+                .urlLogo("logo.png")
+                .address("Address")
+                .phoneNumber("+545231321321")
+                .idOwner(1L)
+                .build();
+
+        RestaurantResponseDto responseDto = RestaurantResponseDto.builder()
+                                                .id(1L)
+                                                .name("My Restaurant")
+                                                .nit("231321321")
+                                                .address("Address")
+                                                .phoneNumber("+545231321321")
+                                                .urlLogo("logo.png")
+                                                .idOwner(1L)
+                                                .build();
+
+        when(restaurantRequestMapper.toRestaurant(requestDto)).thenReturn(domainRestaurant);
+        when(restaurantServicePort.createRestaurant(domainRestaurant)).thenReturn(createdRestaurant);
+        when(restaurantResponseMapper.toRestaurantResponseDto(createdRestaurant)).thenReturn(responseDto);
 
         RestaurantResponseDto result = restaurantHandler.createRestaurant(requestDto);
 
-        assertNotNull(result);
-        assertEquals("Pizza House", result.getName());
-        assertEquals("987654321", result.getNit());
-
+        assertEquals(responseDto, result);
         verify(restaurantRequestMapper).toRestaurant(requestDto);
-        verify(restaurantServicePort).createRestaurant(model);
-        verify(restaurantResponseMapper).toRestaurantResponseDto(model);
+        verify(restaurantServicePort).createRestaurant(domainRestaurant);
+        verify(restaurantResponseMapper).toRestaurantResponseDto(createdRestaurant);
     }
 
     @Test
-    void shouldReturnPaginatedListOfRestaurantDto(){
-        int page = 0;
-        int size = 2;
-        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+    void testRestaurantList() {
+        int pageIndex = 0;
+        int elementsPerPage = 2;
 
-        Restaurant r1 = new Restaurant.Builder()
-                .id(1L)
-                .name("A")
-                .urlLogo("Logo 1")
-                .nit("1321231321")
-                .phoneNumber("31215454")
-                .address("calle 1 2d2d")
-                .idOwner(1L)
-                .build();
+        List<Restaurant> restaurantList = List.of(
 
-        Restaurant r2 = new Restaurant.Builder()
-                .id(2L)
-                .name("B")
-                .urlLogo("Logo 2")
-                .nit("1321231321")
-                .phoneNumber("31215454")
-                .address("calle 1 2d2d")
-                .idOwner(1L)
-                .build();
+                Restaurant.builder()
+                        .id(1L)
+                        .name("Rest1")
+                        .urlLogo("logo1.png")
+                        .nit("NIT1")
+                        .address("Address1")
+                        .idOwner(1L)
+                        .build(),
+                Restaurant.builder()
+                        .id(2L)
+                        .name("Rest2")
+                        .urlLogo("logo2.png")
+                        .nit("NIT2")
+                        .address("Address2")
+                        .idOwner(2L)
+                        .build()
+        );
 
-        List<Restaurant> restaurantList = List.of(r1, r2);
+        List<RestaurantResumeResponseDto> resumeDtos = List.of(
+                new RestaurantResumeResponseDto("Rest1", "logo1.png"),
+                new RestaurantResumeResponseDto("Rest2", "logo2.png")
+        );
 
-        Page<Restaurant> restaurantPage = new PageImpl<>(restaurantList, pageable, restaurantList.size());
+        when(restaurantServicePort.findAllRestaurants(pageIndex, elementsPerPage)).thenReturn(restaurantList);
+        when(restaurantResumeResponseMapper.toResumeDtoList(restaurantList)).thenReturn(resumeDtos);
 
-        RestaurantResumeResponseDto dto1 =  new RestaurantResumeResponseDto("A", "Logo 1");
-        RestaurantResumeResponseDto dto2 =  new RestaurantResumeResponseDto("B", "Logo 2");
-        List<RestaurantResumeResponseDto> dtoList = List.of(dto1,dto2);
+        List<RestaurantResumeResponseDto> result = restaurantHandler.restaurantList(pageIndex, elementsPerPage);
 
-        when(restaurantServicePort.findAll(pageable)).thenReturn(restaurantPage);
-        when(restauranteResumenResponseMapper.toResumenDtoList(restaurantList)).thenReturn(dtoList);
+        assertEquals(2, result.size());
+        assertEquals("Rest1", result.get(0).name());
+        assertEquals("Rest2", result.get(1).name());
 
-        Page<RestaurantResumeResponseDto> result = restaurantHandler.restaurantList(page,size);
-
-        assertNotNull(result);
-        assertEquals(2, result.getTotalElements());
-        assertEquals("A", result.getContent().get(0).name());
-        assertEquals("B", result.getContent().get(1).name());
-
-        verify(restaurantServicePort).findAll(pageable);
-        verify(restauranteResumenResponseMapper).toResumenDtoList(restaurantList);
+        verify(restaurantServicePort).findAllRestaurants(pageIndex, elementsPerPage);
+        verify(restaurantResumeResponseMapper).toResumeDtoList(restaurantList);
     }
 }

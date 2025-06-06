@@ -1,8 +1,9 @@
 package com.plazoleta.plazoleta_microservice.application.handler.impl;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DishOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
-import com.plazoleta.plazoleta_microservice.application.handler.IAuthenticatedUserHandler;
+import com.plazoleta.plazoleta_microservice.domain.spi.IAuthenticatedUserPort;
 import com.plazoleta.plazoleta_microservice.application.mapper.IOrderResponseMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.OrderRequestMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
@@ -14,7 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,11 +23,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OrderHandlerImplTest {
-    @Mock
-    private IOrderServicePort orderServicePort;
 
     @Mock
-    private IAuthenticatedUserHandler authenticatedUserHandler;
+    private IOrderServicePort orderServicePort;
 
     @Mock
     private OrderRequestMapper orderRequestMapper;
@@ -43,59 +42,60 @@ class OrderHandlerImplTest {
     }
 
     @Test
-    void createOrder_shouldSetCustomerIdAndCallService() {
-        Long userId = 123L;
+    void testCreateOrder() {
+        DishOrderRequestDto dish1 = new DishOrderRequestDto(1L, 2);
+        ArrayList<DishOrderRequestDto> dishes = new ArrayList<>();
+        dishes.add(dish1);
 
-        CreateOrderRequestDto dto = new CreateOrderRequestDto();
-        Order mappedOrder = new Order(1L, null, null, 100L, null, null, List.of());
+        CreateOrderRequestDto requestDto = new CreateOrderRequestDto();
+        requestDto.setIdRestaurant(10L);
+        requestDto.setDishes(dishes);
 
-        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(userId);
-        when(orderRequestMapper.toDomain(dto)).thenReturn(mappedOrder);
+        Order order = Order.builder()
+                .restaurantId(10L)
+                .build();
 
-        orderHandler.createOrder(dto);
+        when(orderRequestMapper.toDomain(requestDto)).thenReturn(order);
 
-        assertEquals(userId, mappedOrder.getCustomerId());
-        verify(orderServicePort).createOrder(mappedOrder);
+        orderHandler.createOrder(requestDto);
+
+        verify(orderRequestMapper).toDomain(requestDto);
+        verify(orderServicePort).createOrder(order);
     }
 
     @Test
-    void getOrdersByStatusAndRestaurantId_ShouldReturnDtoList() {
-        Long restaurantId = 1L;
+    void testFindOrdersByStatusForAuthenticatedEmployee() {
         OrderStatus status = OrderStatus.PENDING;
         int pageIndex = 0;
         int elementsPerPage = 5;
 
-        List<Order> orders = List.of(new Order(), new Order());
-        List<OrderResponseDto> expectedDtos = List.of(
-                new OrderResponseDto(1L,1L,2L, "2025-06-02T16:14:15.119426",OrderStatus.PENDING,"PENDING",1L),
-                new OrderResponseDto(2L, 1L,2L, "2025-06-02T16:14:15.119426",OrderStatus.PENDING,"PENDING",1L)
+        List<Order> orders = List.of(
+                Order.builder().id(1L).build(),
+                Order.builder().id(2L).build()
         );
 
-        when(orderServicePort.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage))
-                .thenReturn(orders);
-
-        when(orderResponseMapper.toResponsesDto(orders))
-                .thenReturn(expectedDtos);
-
-        List<OrderResponseDto> result = orderHandler.getOrdersByStatusAndRestaurantId(
-                restaurantId, status, pageIndex, elementsPerPage
+        List<OrderResponseDto> responseDtos = List.of(
+                new OrderResponseDto(1L, 100L, 200L, "2024-01-01", status, "Pending", 10L),
+                new OrderResponseDto(2L, 101L, 201L, "2024-01-02", status, "Pending", 10L)
         );
 
-        assertEquals(expectedDtos, result);
-        verify(orderServicePort).getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
+        when(orderServicePort.findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage)).thenReturn(orders);
+        when(orderResponseMapper.toResponsesDto(orders)).thenReturn(responseDtos);
+
+        List<OrderResponseDto> result = orderHandler.findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage);
+
+        assertEquals(2, result.size());
+        assertEquals(1L, result.getFirst().getId());
+        verify(orderServicePort).findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage);
         verify(orderResponseMapper).toResponsesDto(orders);
     }
 
     @Test
-    void assignOrder_ShouldCallAssignOrderWithAuthenticatedUserId() {
-        Long orderId = 1L;
-        Long employedId = 42L;
-
-        when(authenticatedUserHandler.getCurrentUserId()).thenReturn(employedId);
+    void testAssignOrder() {
+        Long orderId = 99L;
 
         orderHandler.assignOrder(orderId);
 
-        verify(authenticatedUserHandler).getCurrentUserId();
-        verify(orderServicePort).assignOrder(orderId, employedId);
+        verify(orderServicePort).assignOrder(orderId);
     }
 }
