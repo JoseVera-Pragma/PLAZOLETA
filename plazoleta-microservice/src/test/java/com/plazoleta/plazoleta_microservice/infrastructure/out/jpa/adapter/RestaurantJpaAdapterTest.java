@@ -1,14 +1,14 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IRestaurantEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IRestaurantRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.*;
 
 import java.util.List;
@@ -17,129 +17,99 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class RestaurantJpaAdapterTest {
+
+    @Mock
     private IRestaurantRepository restaurantRepository;
+
+    @Mock
     private IRestaurantEntityMapper restaurantEntityMapper;
-    private RestaurantJpaAdapter adapter;
+
+    @InjectMocks
+    private RestaurantJpaAdapter restaurantJpaAdapter;
+
+    private Restaurant domainRestaurant;
+    private RestaurantEntity entityRestaurant;
 
     @BeforeEach
     void setUp() {
-        restaurantRepository = mock(IRestaurantRepository.class);
-        restaurantEntityMapper = mock(IRestaurantEntityMapper.class);
-        adapter = new RestaurantJpaAdapter(restaurantRepository, restaurantEntityMapper);
+        MockitoAnnotations.openMocks(this);
+
+        domainRestaurant = Restaurant.builder()
+                .id(1L)
+                .name("Restaurante El Sabor")
+                .nit("123456789")
+                .address("Calle 123")
+                .phoneNumber("3201234567")
+                .urlLogo("logo.png")
+                .idOwner(99L)
+                .build();
+
+        entityRestaurant = new RestaurantEntity();
+        entityRestaurant.setId(1L);
+        entityRestaurant.setName("Restaurante El Sabor");
+        entityRestaurant.setNit("123456789");
+        entityRestaurant.setAddress("Calle 123");
+        entityRestaurant.setPhoneNumber("3201234567");
+        entityRestaurant.setUrlLogo("logo.png");
+        entityRestaurant.setIdOwner(99L);
     }
 
     @Test
     void testSaveRestaurant() {
-        Restaurant restaurant = new Restaurant.Builder()
-                .id(1L)
-                .name("Name")
-                .nit("123456")
-                .address("Address")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.url")
-                .idOwner(1L)
-                .build();
-        RestaurantEntity restaurantEntity = new RestaurantEntity();
+        when(restaurantEntityMapper.toRestaurantEntity(domainRestaurant)).thenReturn(entityRestaurant);
+        when(restaurantRepository.save(entityRestaurant)).thenReturn(entityRestaurant);
+        when(restaurantEntityMapper.toRestaurant(entityRestaurant)).thenReturn(domainRestaurant);
 
-        when(restaurantEntityMapper.toRestaurantEntity(restaurant)).thenReturn(restaurantEntity);
+        Restaurant result = restaurantJpaAdapter.saveRestaurant(domainRestaurant);
 
-        adapter.saveRestaurant(restaurant);
-
-        verify(restaurantEntityMapper).toRestaurantEntity(restaurant);
-        verify(restaurantRepository).save(restaurantEntity);
+        assertEquals(domainRestaurant, result);
+        verify(restaurantRepository).save(entityRestaurant);
     }
 
     @Test
-    void testExistsByNit() {
-        String nit = "123456";
-        when(restaurantRepository.existsByNit(nit)).thenReturn(true);
-
-        boolean exists = adapter.existsByNit(nit);
-
-        verify(restaurantRepository).existsByNit(nit);
-        assert(exists);
+    void testExistsRestaurantByNitTrue() {
+        when(restaurantRepository.existsByNit("123456789")).thenReturn(true);
+        assertTrue(restaurantJpaAdapter.existsRestaurantByNit("123456789"));
     }
 
     @Test
-    void testgetById() {
-        Restaurant restaurant = new Restaurant.Builder()
-                .id(1L)
-                .name("Name")
-                .nit("123456")
-                .address("Address")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.url")
-                .idOwner(1L)
-                .build();
-        RestaurantEntity restaurantEntity = new RestaurantEntity(1L,"Name","123456","Address","+123456789","http://logo.url",1L);
-
-        when(restaurantRepository.findById(1L)).thenReturn(Optional.of(restaurantEntity));
-        when(restaurantEntityMapper.toRestaurant(restaurantEntity)).thenReturn(restaurant);
-
-        Restaurant result = adapter.getById(1L);
-
-        assertNotNull(result);
-        assertEquals(restaurant.getId(), result.getId());
-        assertEquals(restaurant.getName(), result.getName());
-        verify(restaurantRepository).findById(1L);
-        verify(restaurantEntityMapper).toRestaurant(restaurantEntity);
+    void testExistsRestaurantByNitFalse() {
+        when(restaurantRepository.existsByNit("123456789")).thenReturn(false);
+        assertFalse(restaurantJpaAdapter.existsRestaurantByNit("123456789"));
     }
 
     @Test
-    void getById_ShouldThrowException_WhenRestaurantDoesNotExist() {
-        Long restaurantId = 99L;
-        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.empty());
+    void testFindRestaurantByIdFound() {
+        when(restaurantRepository.findById(1L)).thenReturn(Optional.of(entityRestaurant));
+        when(restaurantEntityMapper.toRestaurant(entityRestaurant)).thenReturn(domainRestaurant);
 
-        assertThrows(RestaurantNotFoundException.class, () -> adapter.getById(restaurantId));
-        verify(restaurantRepository).findById(restaurantId);
-        verifyNoInteractions(restaurantEntityMapper);
+        Optional<Restaurant> result = restaurantJpaAdapter.findRestaurantById(1L);
+
+        assertTrue(result.isPresent());
+        assertEquals(domainRestaurant, result.get());
     }
 
     @Test
-    void shouldReturnMappedPageOfRestaurants() {
-        Pageable pageable = PageRequest.of(0, 2, Sort.by("name").ascending());
+    void testFindRestaurantByIdNotFound() {
+        when(restaurantRepository.findById(1L)).thenReturn(Optional.empty());
 
-        RestaurantEntity entity1 = new RestaurantEntity(1L,"A","Logo 1","1321231321","31215454","calle 1 2d2d",1L);
-        RestaurantEntity entity2 = new RestaurantEntity(2L,"B","Logo 2","1321231321","31215454","calle 1 2d2d",1L);
-        List<RestaurantEntity> entities = List.of(entity1, entity2);
-        Page<RestaurantEntity> entityPage = new PageImpl<>(entities, pageable, entities.size());
+        Optional<Restaurant> result = restaurantJpaAdapter.findRestaurantById(1L);
 
+        assertFalse(result.isPresent());
+    }
 
-        Restaurant model1 = new Restaurant.Builder()
-                .id(1L)
-                .name("A")
-                .urlLogo("Logo 1")
-                .nit("1321231321")
-                .phoneNumber("31215454")
-                .address("calle 1 2d2d")
-                .idOwner(1L)
-                .build();
+    @Test
+    void testFindAllRestaurants() {
+        List<RestaurantEntity> entities = List.of(entityRestaurant);
+        Page<RestaurantEntity> page = new PageImpl<>(entities);
 
-        Restaurant model2 = new Restaurant.Builder()
-                .id(2L)
-                .name("B")
-                .urlLogo("Logo 2")
-                .nit("1321231321")
-                .phoneNumber("31215454")
-                .address("calle 1 2d2d")
-                .idOwner(1L)
-                .build();
+        when(restaurantRepository.findAll(PageRequest.of(0, 2))).thenReturn(page);
+        when(restaurantEntityMapper.toRestaurant(entityRestaurant)).thenReturn(domainRestaurant);
 
-        when(restaurantRepository.findAll(pageable)).thenReturn(entityPage);
-        when(restaurantEntityMapper.toRestaurant(entity1)).thenReturn(model1);
-        when(restaurantEntityMapper.toRestaurant(entity2)).thenReturn(model2);
+        List<Restaurant> result = restaurantJpaAdapter.findAllRestaurants(0, 2);
 
-        Page<Restaurant> result = adapter.findAll(pageable);
-
-        assertNotNull(result);
-        assertEquals(2, result.getTotalElements());
-        assertEquals("A", result.getContent().get(0).getName());
-        assertEquals("B", result.getContent().get(1).getName());
-
-        verify(restaurantRepository).findAll(pageable);
-        verify(restaurantEntityMapper).toRestaurant(entity1);
-        verify(restaurantEntityMapper).toRestaurant(entity2);
+        assertEquals(1, result.size());
+        assertEquals(domainRestaurant, result.getFirst());
     }
 }

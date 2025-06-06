@@ -1,16 +1,11 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
-import com.plazoleta.plazoleta_microservice.domain.model.OrderDish;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.OrderNotFoundException;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.OrderEntityMapper;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IOrderEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderRepository;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IRestaurantRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -34,187 +29,109 @@ class OrderJpaAdapterTest {
     private IOrderRepository orderRepository;
 
     @Mock
-    private IDishRepository dishRepository;
-
-    @Mock
-    private IRestaurantRepository restaurantRepository;
-
-    @Mock
-    private OrderEntityMapper orderEntityMapper;
+    private IOrderEntityMapper orderEntityMapper;
 
     @InjectMocks
     private OrderJpaAdapter orderJpaAdapter;
 
+    private Order order;
+    private OrderEntity orderEntity;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        order = Order.builder()
+                .id(1L)
+                .customerId(100L)
+                .restaurantId(10L)
+                .status(OrderStatus.PENDING)
+                .orderDate(LocalDateTime.now())
+                .build();
+
+        RestaurantEntity restaurantEntity = new RestaurantEntity();
+        orderEntity = new OrderEntity();
+        orderEntity.setId(1L);
+        orderEntity.setCustomerId(100L);
+        orderEntity.setRestaurant(restaurantEntity);
+        orderEntity.setStatus(OrderStatus.PENDING);
+        orderEntity.setOrderDate(LocalDateTime.now());
     }
 
     @Test
-    void saveOrder_shouldSaveOrderCorrectly() {
-        Order order = new Order(1L, 10L, null, 100L, LocalDateTime.now(), OrderStatus.PENDING,
-                List.of(new OrderDish(1L, 2)));
-
-        RestaurantEntity restaurant = new RestaurantEntity();
-        DishEntity dishEntity = new DishEntity();
-        List<DishEntity> dishes = List.of(dishEntity);
-
-        OrderEntity mappedEntity = new OrderEntity();
-
-        when(restaurantRepository.findById(100L)).thenReturn(Optional.of(restaurant));
-        when(dishRepository.findAllById(List.of(1L))).thenReturn(dishes);
-        when(orderEntityMapper.toEntity(order, restaurant, dishes)).thenReturn(mappedEntity);
+    void testSaveOrder() {
+        when(orderEntityMapper.toOrderEntity(order)).thenReturn(orderEntity);
 
         orderJpaAdapter.saveOrder(order);
 
-        verify(orderRepository).save(mappedEntity);
+        verify(orderRepository).save(orderEntity);
     }
 
     @Test
-    void saveOrder_shouldThrowIfRestaurantNotFound() {
-        Order order = new Order(null, 1L, null, 99L, null, OrderStatus.PENDING, List.of());
+    void testFindOrderByIdFound() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(orderEntity));
+        when(orderEntityMapper.toOrder(orderEntity)).thenReturn(order);
 
-        when(restaurantRepository.findById(99L)).thenReturn(Optional.empty());
+        Optional<Order> result = orderJpaAdapter.findOrderById(1L);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
-            orderJpaAdapter.saveOrder(order);
-        });
-
-        assertTrue(ex.getMessage().contains("Restaurant not found"));
+        assertTrue(result.isPresent());
+        assertEquals(order, result.get());
     }
 
     @Test
-    void getOrderById_shouldReturnMappedOrder() {
-        OrderEntity entity = new OrderEntity();
-        Order expectedOrder = new Order();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(entity));
-        when(orderEntityMapper.toDomain(entity)).thenReturn(expectedOrder);
+    void testFindOrderByIdNotFound() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-        Order result = orderJpaAdapter.getOrderById(1L);
+        Optional<Order> result = orderJpaAdapter.findOrderById(1L);
 
-        assertEquals(expectedOrder, result);
+        assertFalse(result.isPresent());
     }
 
     @Test
-    void getOrderById_shouldThrowIfNotFound() {
-        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+    void testFindOrdersByCustomerId() {
+        List<OrderEntity> entities = List.of(orderEntity);
 
-        assertThrows(OrderNotFoundException.class, () -> {
-            orderJpaAdapter.getOrderById(999L);
-        });
+        when(orderRepository.findByCustomerId(100L)).thenReturn(entities);
+        when(orderEntityMapper.toOrder(orderEntity)).thenReturn(order);
+
+        List<Order> result = orderJpaAdapter.findOrdersByCustomerId(100L);
+
+        assertEquals(1, result.size());
+        assertEquals(order, result.getFirst());
     }
 
     @Test
-    void getOrdersByCustomerId_shouldMapOrdersCorrectly() {
-        OrderEntity entity1 = new OrderEntity();
-        OrderEntity entity2 = new OrderEntity();
+    void testCustomerHasOrdersInProcessTrue() {
+        when(orderRepository.existsByCustomerIdAndStatusIn(eq(100L), anyList())).thenReturn(true);
 
-        Order domain1 = new Order();
-        Order domain2 = new Order();
-
-        when(orderRepository.findByCustomerId(100L)).thenReturn(List.of(entity1, entity2));
-        when(orderEntityMapper.toDomain(entity1)).thenReturn(domain1);
-        when(orderEntityMapper.toDomain(entity2)).thenReturn(domain2);
-
-        List<Order> result = orderJpaAdapter.getOrdersByCustomerId(100L);
-
-        assertEquals(2, result.size());
-        assertTrue(result.contains(domain1));
-        assertTrue(result.contains(domain2));
+        assertTrue(orderJpaAdapter.customerHasOrdersInProcess(100L));
     }
 
     @Test
-    void customerHasOrdersInProcess_shouldReturnTrueIfExists() {
-        when(orderRepository.existsByCustomerIdAndStatusIn(
-                eq(10L),
-                anyList()
-        )).thenReturn(true);
+    void testCustomerHasOrdersInProcessFalse() {
+        when(orderRepository.existsByCustomerIdAndStatusIn(eq(100L), anyList())).thenReturn(false);
 
-        boolean result = orderJpaAdapter.customerHasOrdersInProcess(10L);
-        assertTrue(result);
+        assertFalse(orderJpaAdapter.customerHasOrdersInProcess(100L));
     }
 
     @Test
-    void customerHasOrdersInProcess_shouldReturnFalseIfNotExists() {
-        when(orderRepository.existsByCustomerIdAndStatusIn(
-                eq(20L),
-                anyList()
-        )).thenReturn(false);
+    void testFindOrdersByStatusAndRestaurantId() {
+        Page<OrderEntity> page = new PageImpl<>(List.of(orderEntity));
+        when(orderRepository.findAllByRestaurantIdAndStatus(eq(10L), eq(OrderStatus.PENDING), any(PageRequest.class))).thenReturn(page);
+        when(orderEntityMapper.toOrder(orderEntity)).thenReturn(order);
 
-        boolean result = orderJpaAdapter.customerHasOrdersInProcess(20L);
-        assertFalse(result);
+        List<Order> result = orderJpaAdapter.findOrdersByStatusAndRestaurantId(10L, OrderStatus.PENDING, 0, 10);
+
+        assertEquals(1, result.size());
+        assertEquals(order, result.getFirst());
     }
 
     @Test
-    void getOrdersByStatusAndRestaurantId_ShouldReturnMappedOrders() {
-        Long restaurantId = 1L;
-        OrderStatus status = OrderStatus.PENDING;
-        int pageIndex = 0;
-        int elementsPerPage = 2;
-
-        OrderEntity entity1 = new OrderEntity();
-        OrderEntity entity2 = new OrderEntity();
-        List<OrderEntity> entityList = List.of(entity1, entity2);
-
-        Page<OrderEntity> orderPage = new PageImpl<>(entityList);
-
-        Order order1 = new Order();
-        Order order2 = new Order();
-
-        when(orderRepository.findAllByRestaurantIdAndStatus(
-                eq(restaurantId),
-                eq(status),
-                any(PageRequest.class))
-        ).thenReturn(orderPage);
-
-        when(orderEntityMapper.toDomain(entity1)).thenReturn(order1);
-        when(orderEntityMapper.toDomain(entity2)).thenReturn(order2);
-
-        List<Order> result = orderJpaAdapter.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals(order1, result.get(0));
-        assertEquals(order2, result.get(1));
-
-        verify(orderRepository).findAllByRestaurantIdAndStatus(eq(restaurantId), eq(status), any(PageRequest.class));
-        verify(orderEntityMapper).toDomain(entity1);
-        verify(orderEntityMapper).toDomain(entity2);
-    }
-
-    @Test
-    void updateOrder_ShouldUpdateChefIdAndStatus() {
-        Long orderId = 1L;
-        Long chefId = 10L;
-        OrderStatus status = OrderStatus.IN_PREPARATION;
-
-        Order order = new Order();
-        order.setId(orderId);
-        order.setChefId(chefId);
-        order.setStatus(status);
-
-        OrderEntity existingEntity = new OrderEntity();
-        existingEntity.setId(orderId);
-
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(existingEntity));
+    void testUpdateOrder() {
+        when(orderEntityMapper.toOrderEntity(order)).thenReturn(orderEntity);
 
         orderJpaAdapter.updateOrder(order);
 
-        assertEquals(chefId, existingEntity.getChefId());
-        assertEquals(status, existingEntity.getStatus());
-        verify(orderRepository).save(existingEntity);
-    }
-
-    @Test
-    void updateOrder_ShouldThrowException_WhenOrderNotFound() {
-        Long orderId = 1L;
-        Order order = new Order();
-        order.setId(orderId);
-
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
-
-        assertThrows(OrderNotFoundException.class, () -> orderJpaAdapter.updateOrder(order));
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository).save(orderEntity);
     }
 }

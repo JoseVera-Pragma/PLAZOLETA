@@ -5,21 +5,19 @@ import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.Catego
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.ICategoryEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.ICategoryRepository;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
+
 class CategoryJpaAdapterTest {
 
     @Mock
@@ -34,137 +32,100 @@ class CategoryJpaAdapterTest {
     @InjectMocks
     private CategoryJpaAdapter categoryJpaAdapter;
 
-    @Test
-    void save_ShouldReturnSavedCategory() {
-        Category category = new Category(1L,"Comida","Descripcion");
-        Category savedCategory = new Category(1L,"Comida","Descripcion");
+    private Category domainCategory;
+    private CategoryEntity entityCategory;
 
-        when(categoryEntityMapper.toEntity(category)).thenReturn(new CategoryEntity());
-        when(categoryRepository.save(any())).thenReturn(new CategoryEntity());
-        when(categoryEntityMapper.toModel((CategoryEntity) any())).thenReturn(savedCategory);
-
-        Category result = categoryJpaAdapter.save(category);
-
-        assertNotNull(result);
-        assertEquals(savedCategory, result);
-
-        verify(categoryEntityMapper).toEntity(category);
-        verify(categoryRepository).save(any());
-        verify(categoryEntityMapper).toModel((CategoryEntity) any());
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        domainCategory = new Category(1L,"Bebidas","Líquidos");
+        entityCategory = new CategoryEntity();
+        entityCategory.setId(1L);
+        entityCategory.setName("Bebidas");
+        entityCategory.setDescription("Líquidos");
     }
 
     @Test
-    void findById_ShouldReturnCategoryWhenFound() {
-        Long id = 1L;
-        CategoryEntity entity = new CategoryEntity();
-        Category category = new Category(1L,"Comida","Descripcion");
+    void testSaveCategory() {
+        when(categoryEntityMapper.toEntity(domainCategory)).thenReturn(entityCategory);
+        when(categoryRepository.save(entityCategory)).thenReturn(entityCategory);
+        when(categoryEntityMapper.toModel(entityCategory)).thenReturn(domainCategory);
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(entity));
-        when(categoryEntityMapper.toModel(entity)).thenReturn(category);
+        Category result = categoryJpaAdapter.saveCategory(domainCategory);
 
-        Optional<Category> result = categoryJpaAdapter.findById(id);
+        assertEquals(domainCategory, result);
+        verify(categoryRepository).save(entityCategory);
+    }
+
+    @Test
+    void testFindCategoryByIdFound() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(entityCategory));
+        when(categoryEntityMapper.toModel(entityCategory)).thenReturn(domainCategory);
+
+        Optional<Category> result = categoryJpaAdapter.findCategoryById(1L);
 
         assertTrue(result.isPresent());
-        assertEquals(category, result.get());
-
-        verify(categoryRepository).findById(id);
-        verify(categoryEntityMapper).toModel(entity);
+        assertEquals(domainCategory, result.get());
     }
 
     @Test
-    void findById_ShouldReturnEmptyWhenNotFound() {
-        Long id = 1L;
+    void testFindCategoryByIdNotFound() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+        Optional<Category> result = categoryJpaAdapter.findCategoryById(1L);
 
-        Optional<Category> result = categoryJpaAdapter.findById(id);
-
-        assertTrue(result.isEmpty());
-        verify(categoryRepository).findById(id);
-        verifyNoInteractions(categoryEntityMapper);
+        assertFalse(result.isPresent());
     }
 
     @Test
-    void findByName_ShouldReturnCategoryWhenFound() {
-        String name = "Italian";
-        CategoryEntity entity = new CategoryEntity();
-        Category category = new Category(1L,"Comida","Descripcion");
+    void testFindCategoryByNameFound() {
+        when(categoryRepository.findByName("Bebidas")).thenReturn(Optional.of(entityCategory));
+        when(categoryEntityMapper.toModel(entityCategory)).thenReturn(domainCategory);
 
-        when(categoryRepository.findByName(name)).thenReturn(Optional.of(entity));
-        when(categoryEntityMapper.toModel(entity)).thenReturn(category);
-
-        Optional<Category> result = categoryJpaAdapter.findByName(name);
+        Optional<Category> result = categoryJpaAdapter.findCategoryByName("Bebidas");
 
         assertTrue(result.isPresent());
-        assertEquals(category, result.get());
-
-        verify(categoryRepository).findByName(name);
-        verify(categoryEntityMapper).toModel(entity);
+        assertEquals(domainCategory, result.get());
     }
 
     @Test
-    void findByName_ShouldReturnEmptyWhenNotFound() {
-        String name = "Italian";
+    void testFindCategoryByNameNotFound() {
+        when(categoryRepository.findByName("Bebidas")).thenReturn(Optional.empty());
 
-        when(categoryRepository.findByName(name)).thenReturn(Optional.empty());
+        Optional<Category> result = categoryJpaAdapter.findCategoryByName("Bebidas");
 
-        Optional<Category> result = categoryJpaAdapter.findByName(name);
-
-        assertTrue(result.isEmpty());
-        verify(categoryRepository).findByName(name);
-        verifyNoInteractions(categoryEntityMapper);
+        assertFalse(result.isPresent());
     }
 
     @Test
-    void findAll_ShouldReturnListOfCategories() {
-        List<CategoryEntity> entities = List.of(
-                new CategoryEntity(),
-                new CategoryEntity()
-        );
-        List<Category> categories = List.of(new Category(1L,"Comida","Descripcion"), new Category(1L,"Comida","Descripcion"));
+    void testFindAllCategories() {
+        List<CategoryEntity> entityList = List.of(entityCategory);
+        List<Category> domainList = List.of(domainCategory);
 
-        when(categoryRepository.findAll()).thenReturn(entities);
-        when(categoryEntityMapper.toModelList(entities)).thenReturn(categories);
+        when(categoryRepository.findAll()).thenReturn(entityList);
+        when(categoryEntityMapper.toModelList(entityList)).thenReturn(domainList);
 
-        List<Category> result = categoryJpaAdapter.findAll();
+        List<Category> result = categoryJpaAdapter.findAllCategories();
 
-        assertEquals(categories, result);
-        verify(categoryRepository).findAll();
-        verify(categoryEntityMapper).toModelList(entities);
+        assertEquals(1, result.size());
+        assertEquals(domainCategory, result.getFirst());
     }
 
     @Test
-    void delete_ShouldCallRepositoryDeleteById() {
-        Long id = 1L;
-
-        doNothing().when(categoryRepository).deleteById(id);
-
-        categoryJpaAdapter.delete(id);
-
-        verify(categoryRepository).deleteById(id);
+    void testDeleteCategory() {
+        categoryJpaAdapter.deleteCategory(1L);
+        verify(categoryRepository).deleteById(1L);
     }
 
     @Test
-    void existsDishWithCategoryId_ShouldReturnTrueWhenExists() {
-        Long categoryId = 1L;
-
-        when(dishRepository.existsByCategoryId(categoryId)).thenReturn(true);
-
-        boolean result = categoryJpaAdapter.existsDishWithCategoryId(categoryId);
-
-        assertTrue(result);
-        verify(dishRepository).existsByCategoryId(categoryId);
+    void testExistsDishWithCategoryIdTrue() {
+        when(dishRepository.existsByCategoryId(1L)).thenReturn(true);
+        assertTrue(categoryJpaAdapter.existsDishWithCategoryId(1L));
     }
 
     @Test
-    void existsDishWithCategoryId_ShouldReturnFalseWhenNotExists() {
-        Long categoryId = 1L;
-
-        when(dishRepository.existsByCategoryId(categoryId)).thenReturn(false);
-
-        boolean result = categoryJpaAdapter.existsDishWithCategoryId(categoryId);
-
-        assertFalse(result);
-        verify(dishRepository).existsByCategoryId(categoryId);
+    void testExistsDishWithCategoryIdFalse() {
+        when(dishRepository.existsByCategoryId(1L)).thenReturn(false);
+        assertFalse(categoryJpaAdapter.existsDishWithCategoryId(1L));
     }
 }
