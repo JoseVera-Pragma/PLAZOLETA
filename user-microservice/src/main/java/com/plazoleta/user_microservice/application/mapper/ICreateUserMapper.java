@@ -3,8 +3,6 @@ package com.plazoleta.user_microservice.application.mapper;
 import com.plazoleta.user_microservice.application.dto.request.CreateUserRequestDto;
 import com.plazoleta.user_microservice.domain.model.User;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring",

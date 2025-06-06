@@ -15,7 +15,7 @@ public class User {
     private final Role role;
     private final Long restaurantId;
 
-    private User(Builder builder){
+    public User(Builder builder){
         this.id = builder.id;
         this.firstName = builder.firstName;
         this.lastName = builder.lastName;
