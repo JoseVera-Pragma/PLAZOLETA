@@ -1,6 +1,8 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.feing;
 
 import com.plazoleta.plazoleta_microservice.domain.model.User;
+import com.plazoleta.plazoleta_microservice.infrastructure.exception.UserServiceUnavailableException;
+import feign.FeignException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,6 +12,7 @@ import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+
 class UserFeignAdapterTest {
 
     @Mock
@@ -18,44 +21,42 @@ class UserFeignAdapterTest {
     @InjectMocks
     private UserFeignAdapter userFeignAdapter;
 
+    private User user;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-    }
 
-    @Test
-    void getUserById_shouldReturnUser_whenFeignClientReturnsUser() {
-        Long userId = 1L;
-        User expectedUser = new User.Builder()
-                .firstName("string")
-                .lastName("string")
-                .identityNumber("82992378008930303382364348441465148555688249808251")
-                .phoneNumber("7699624734559")
-                .dateOfBirth("2007-05-20")
-                .email("string@string.test")
-                .password("82992378008930303382364348441465148555688249808251")
-                .role("1")
+        user = User.builder()
+                .firstName("Jose")
+                .lastName("Vera")
+                .email("jose@mail.com")
+                .phoneNumber("3210001111")
+                .password("secure")
                 .build();
-
-        when(userFeignClient.getUserById(userId)).thenReturn(expectedUser);
-
-        User actualUser = userFeignAdapter.getUserById(userId);
-
-        assertNotNull(actualUser);
-        assertEquals(expectedUser.getEmail(), actualUser.getEmail());
-        assertEquals(expectedUser.getFirstName(), actualUser.getFirstName());
-
-        verify(userFeignClient, times(1)).getUserById(userId);
     }
 
     @Test
-    void getUserById_shouldReturnNull_whenFeignClientReturnsNull() {
-        Long userId = 2L;
-        when(userFeignClient.getUserById(userId)).thenReturn(null);
+    void testFindUserById_success() {
+        when(userFeignClient.getUserById(1L)).thenReturn(user);
 
-        User actualUser = userFeignAdapter.getUserById(userId);
+        User result = userFeignAdapter.findUserById(1L);
 
-        assertNull(actualUser);
-        verify(userFeignClient, times(1)).getUserById(userId);
+        assertEquals(user, result);
+        verify(userFeignClient).getUserById(1L);
+    }
+
+    @Test
+    void testFindUserById_serviceUnavailable() {
+        FeignException feignException = mock(FeignException.class);
+        when(userFeignClient.getUserById(1L)).thenThrow(feignException);
+
+        UserServiceUnavailableException exception = assertThrows(
+                UserServiceUnavailableException.class,
+                () -> userFeignAdapter.findUserById(1L)
+        );
+
+        assertEquals("User service is currently unavailable", exception.getMessage());
+        assertEquals(feignException, exception.getCause());
     }
 }

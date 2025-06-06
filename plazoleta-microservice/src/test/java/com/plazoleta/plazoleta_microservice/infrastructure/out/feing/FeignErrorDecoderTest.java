@@ -24,7 +24,7 @@ class FeignErrorDecoderTest {
                 .request(Request.create(Request.HttpMethod.GET, "/users/8", Collections.emptyMap(), null, StandardCharsets.UTF_8, null))
                 .build();
 
-        Exception exception = decoder.decode("UserClient#getUserById", response);
+        Exception exception = decoder.decode("UserClient#findUserById", response);
         assertInstanceOf(UserNotFoundException.class, exception);
         assertEquals("User not found in remote service", exception.getMessage());
     }
@@ -37,7 +37,7 @@ class FeignErrorDecoderTest {
                 .request(Request.create(Request.HttpMethod.GET, "/users/j", Collections.emptyMap(), null, StandardCharsets.UTF_8, null))
                 .build();
 
-        Exception exception = decoder.decode("UserClient#getUserById", response);
+        Exception exception = decoder.decode("UserClient#findUserById", response);
 
         assertNotNull(exception);
         assertFalse(exception instanceof UserNotFoundException);
