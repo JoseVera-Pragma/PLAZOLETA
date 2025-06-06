@@ -2,13 +2,9 @@ package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity;
 
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "pedidos")
@@ -16,6 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class OrderEntity {
 
     @Id
@@ -28,6 +25,7 @@ public class OrderEntity {
     @Column(name = "fecha",nullable = false)
     private LocalDateTime orderDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
     private OrderStatus status;
 
@@ -38,6 +36,6 @@ public class OrderEntity {
     @JoinColumn(name = "id_restaurante", nullable = false)
     private RestaurantEntity restaurant;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<OrderDishEntity> dishes;
+    @Column(name = "pin_seguridad")
+    private String securityPin;
 }

@@ -7,22 +7,23 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "pedido_plato")
+@Table(name = "pedidos_platos")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderDishEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @EmbeddedId
+    private OrderDishId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
+    @MapsId("orderId")
     @JoinColumn(name = "id_pedido")
     private OrderEntity order;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("dishId")
     @JoinColumn(name = "id_plato")
     private DishEntity dish;
 
