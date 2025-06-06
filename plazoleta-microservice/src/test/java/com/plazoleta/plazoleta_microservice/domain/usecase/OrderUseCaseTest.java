@@ -5,7 +5,7 @@ import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.Restaura
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.*;
 import com.plazoleta.plazoleta_microservice.domain.spi.*;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.OrderNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -45,8 +45,10 @@ class OrderUseCaseTest {
         Long restaurantId = 10L;
         Dish dish = Dish.builder().id(100L).restaurantId(restaurantId).build();
         OrderDish orderDish = new OrderDish(100L, 1);
+        Restaurant restaurant = Restaurant.builder().id(restaurantId).build();
+
         Order order = Order.builder()
-                .restaurantId(restaurantId)
+                .restaurant(restaurant)
                 .dishes(List.of(orderDish))
                 .build();
 
@@ -66,6 +68,7 @@ class OrderUseCaseTest {
         Long customerId = 1L;
         Order order = Order.builder().customerId(customerId).build();
 
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
         when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(true);
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> orderUseCase.createOrder(order));
@@ -76,8 +79,9 @@ class OrderUseCaseTest {
     void createOrder_shouldThrowUserNotFoundException_whenUserNotFound() {
         Long restaurantId = 10L;
         OrderDish orderDish = new OrderDish(100L, 1);
+        Restaurant restaurant = Restaurant.builder().id(restaurantId).build();
         Order order = Order.builder()
-                .restaurantId(restaurantId)
+                .restaurant(restaurant)
                 .dishes(List.of(orderDish))
                 .build();
 
@@ -89,12 +93,30 @@ class OrderUseCaseTest {
     }
 
     @Test
+    void createOrder_shouldThrowRestaurantNotFoundException_whenRestaurantNotFound() {
+        Long restaurantId = 10L;
+        OrderDish orderDish = new OrderDish(100L, 1);
+        Restaurant restaurant = Restaurant.builder().id(restaurantId).build();
+        Order order = Order.builder()
+                .restaurant(restaurant)
+                .dishes(List.of(orderDish))
+                .build();
+
+        when(orderPersistencePort.customerHasOrdersInProcess(anyLong())).thenReturn(false);
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(1L));
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.empty());
+
+        assertThrows(RestaurantNotFoundException.class, () -> orderUseCase.createOrder(order));
+    }
+
+    @Test
     void createOrder_shouldThrowDishNotFoundException_whenDishNotFound() {
         Long customerId = 1L;
         Long restaurantId = 10L;
         OrderDish orderDish = new OrderDish(100L, 1);
+        Restaurant restaurant = Restaurant.builder().id(restaurantId).build();
         Order order = Order.builder()
-                .restaurantId(restaurantId)
+                .restaurant(restaurant)
                 .dishes(List.of(orderDish))
                 .build();
 
@@ -114,8 +136,9 @@ class OrderUseCaseTest {
 
         Dish dish = Dish.builder().id(100L).restaurantId(differentRestaurantId).build();
         OrderDish orderDish = new OrderDish(100L, 1);
+        Restaurant restaurant = Restaurant.builder().id(restaurantId).build();
         Order order = Order.builder()
-                .restaurantId(restaurantId)
+                .restaurant(restaurant)
                 .dishes(List.of(orderDish))
                 .build();
 

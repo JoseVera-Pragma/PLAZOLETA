@@ -18,14 +18,16 @@ class OrderDishTest {
     }
 
     @Test
-    void testSetters() {
-        OrderDish orderDish = new OrderDish(1L, 1);
+    void testAssignOrderId(){
+        Long expectedOrderId = 1L;
+        Long expectedDishId = 1L;
+        Integer expectedQuantity = 3;
 
-        orderDish.setDishId(2L);
-        orderDish.setQuantity(5);
+        OrderDish orderDish = new OrderDish(expectedDishId, expectedQuantity);
 
-        assertEquals(2L, orderDish.getDishId());
-        assertEquals(5, orderDish.getQuantity());
+        orderDish.assignOrderId(1L);
+
+        assertEquals(expectedOrderId, orderDish.getOrderId());
     }
 
 }
