@@ -4,14 +4,12 @@ import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
-import com.plazoleta.plazoleta_microservice.domain.model.Dish;
-import com.plazoleta.plazoleta_microservice.domain.model.Order;
-import com.plazoleta.plazoleta_microservice.domain.model.OrderDish;
-import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import com.plazoleta.plazoleta_microservice.domain.model.*;
 import com.plazoleta.plazoleta_microservice.domain.spi.*;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.OrderNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrderUseCase implements IOrderServicePort {
@@ -24,7 +22,9 @@ public class OrderUseCase implements IOrderServicePort {
 
     public OrderUseCase(IOrderPersistencePort orderPersistencePort,
                         IDishPersistencePort dishPersistencePort,
-                        IRestaurantPersistencePort restaurantPersistencePort, IAuthenticatedUserPort authenticatedUserPort, IUserServiceClientPort userServiceClientPort) {
+                        IRestaurantPersistencePort restaurantPersistencePort,
+                        IAuthenticatedUserPort authenticatedUserPort,
+                        IUserServiceClientPort userServiceClientPort) {
         this.orderPersistencePort = orderPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
@@ -34,23 +34,27 @@ public class OrderUseCase implements IOrderServicePort {
 
     @Override
     public void createOrder(Order order) {
-
-        if (orderPersistencePort.customerHasOrdersInProcess(order.getCustomerId())) {
-            throw new IllegalStateException("Customer have order in process.");
-        }
-
-        restaurantPersistencePort.findRestaurantById(order.getRestaurantId());
-
         Long customerId = authenticatedUserPort.getCurrentUserId()
                 .orElseThrow(() ->
                         new UserNotFoundException("User not found.")
                 );
 
+        if (orderPersistencePort.customerHasOrdersInProcess(customerId)) {
+            throw new IllegalStateException("Customer have order in process.");
+        }
+
+        Restaurant restaurant = restaurantPersistencePort.findRestaurantById(order.getRestaurant().getId())
+                                .orElseThrow(()->
+                                        new RestaurantNotFoundException("Restaurant whit ID "+order.getRestaurant().getId()+" not found.")
+                                );
+
+        List<OrderDish> orderDishes = validateAndEnrichOrderDishes(order.getDishes(), order.getRestaurant().getId());
+
         Order orderToSave = order.withCustomerId(customerId)
                 .withOrderDate(LocalDateTime.now())
-                .withStatus(OrderStatus.PENDING);
-
-        validateAllDishesFromSameRestaurant(orderToSave.getDishes(), orderToSave.getRestaurantId());
+                .withStatus(OrderStatus.PENDING)
+                .withDishes(orderDishes)
+                .withRestaurant(restaurant);
 
         orderPersistencePort.saveOrder(orderToSave);
     }
@@ -94,21 +98,25 @@ public class OrderUseCase implements IOrderServicePort {
                 () -> new UserNotFoundException("User not found."));
 
         Order orderUpdated = order.withChefId(employedId).withStatus(OrderStatus.IN_PREPARATION);
-
         orderPersistencePort.updateOrder(orderUpdated);
     }
 
-    private void validateAllDishesFromSameRestaurant(List<OrderDish> dishes, Long restaurantId) {
-        for (OrderDish dishItem : dishes) {
-            Dish dish = dishPersistencePort.findDishById(dishItem.getDishId())
+    private List<OrderDish> validateAndEnrichOrderDishes(List<OrderDish> orderDishes, Long restaurantId) {
+        List<OrderDish> enrichedOrderDishes = new ArrayList<>();
+
+        for (OrderDish dish  : orderDishes) {
+            Dish fullDish = dishPersistencePort.findDishById(dish.getDishId())
                     .orElseThrow(() ->
-                            new DishNotFoundException("Dish with ID " + dishItem.getDishId() + " not found.")
+                            new DishNotFoundException("Dish with ID " + dish.getDishId() + " not found.")
                     );
-            if (!dish.getRestaurantId().equals(restaurantId)) {
+
+            if (!fullDish.getRestaurantId().equals(restaurantId)) {
                 throw new IllegalArgumentException("All dishes must belong to the same restaurant.");
             }
+
+            enrichedOrderDishes.add(new OrderDish(fullDish.getId(), dish.getQuantity()));
         }
+
+        return enrichedOrderDishes;
     }
-
-
 }
