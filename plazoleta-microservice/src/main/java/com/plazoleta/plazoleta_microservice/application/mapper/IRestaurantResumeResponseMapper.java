@@ -11,7 +11,7 @@ import java.util.List;
         unmappedTargetPolicy = ReportingPolicy.IGNORE,
         unmappedSourcePolicy = ReportingPolicy.IGNORE
 )
-public interface IRestauranteResumenResponseMapper {
-    RestaurantResumeResponseDto toResumenDto(Restaurant restaurant);
-    List<RestaurantResumeResponseDto> toResumenDtoList(List<Restaurant> restaurantList);
+public interface IRestaurantResumeResponseMapper {
+    RestaurantResumeResponseDto toResumeDto(Restaurant restaurant);
+    List<RestaurantResumeResponseDto> toResumeDtoList(List<Restaurant> restaurantList);
 }
