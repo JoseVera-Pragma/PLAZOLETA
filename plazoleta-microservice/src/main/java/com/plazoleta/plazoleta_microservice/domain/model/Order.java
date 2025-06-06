@@ -9,8 +9,9 @@ public class Order {
     private final LocalDateTime orderDate;
     private final OrderStatus status;
     private final Long chefId;
-    private final Long restaurantId;
+    private final Restaurant restaurant;
     private final List<OrderDish> dishes;
+    private final String securityPin;
 
 
     private Order(Builder builder) {
@@ -19,8 +20,9 @@ public class Order {
         this.orderDate = builder.orderDate;
         this.status = builder.status;
         this.chefId = builder.chefId;
-        this.restaurantId = builder.restaurantId;
+        this.restaurant = builder.restaurant;
         this.dishes = builder.dishes;
+        this.securityPin = builder.securityPin;
     }
 
     public static Builder builder() {
@@ -33,8 +35,9 @@ public class Order {
         private LocalDateTime orderDate;
         private OrderStatus status;
         private Long chefId;
-        private Long restaurantId;
+        private Restaurant restaurant;
         private List<OrderDish> dishes;
+        private String securityPin;
 
         public Builder id(Long id) {
             this.id = id;
@@ -61,13 +64,18 @@ public class Order {
             return this;
         }
 
-        public Builder restaurantId(Long restaurantId) {
-            this.restaurantId = restaurantId;
+        public Builder restaurant(Restaurant restaurant) {
+            this.restaurant = restaurant;
             return this;
         }
 
         public Builder dishes(List<OrderDish> dishes) {
             this.dishes = dishes;
+            return this;
+        }
+
+        public Builder securityPin(String securityPin) {
+            this.securityPin = securityPin;
             return this;
         }
 
@@ -79,48 +87,91 @@ public class Order {
     public Order withCustomerId(Long customerId) {
         return Order.builder()
                 .id(this.id)
-                .restaurantId(this.restaurantId)
+                .restaurant(this.restaurant)
                 .chefId(this.chefId)
                 .dishes(this.dishes)
                 .customerId(customerId)
                 .orderDate(this.orderDate)
                 .status(this.status)
+                .securityPin(this.securityPin)
                 .build();
     }
 
     public Order withChefId(Long chefId){
         return Order.builder()
                 .id(this.id)
-                .restaurantId(this.restaurantId)
+                .restaurant(this.restaurant)
                 .chefId(chefId)
                 .dishes(this.dishes)
                 .customerId(this.customerId)
                 .orderDate(this.orderDate)
                 .status(this.status)
+                .securityPin(this.securityPin)
                 .build();
     }
 
     public Order withOrderDate(LocalDateTime orderDate){
         return Order.builder()
                 .id(this.id)
-                .restaurantId(this.restaurantId)
+                .restaurant(this.restaurant)
                 .chefId(this.chefId)
                 .dishes(this.dishes)
                 .customerId(this.customerId)
                 .orderDate(orderDate)
                 .status(this.status)
+                .securityPin(this.securityPin)
                 .build();
     }
 
     public Order withStatus(OrderStatus status){
         return Order.builder()
                 .id(this.id)
-                .restaurantId(this.restaurantId)
+                .restaurant(this.restaurant)
                 .chefId(this.chefId)
                 .dishes(this.dishes)
                 .customerId(this.customerId)
                 .orderDate(this.orderDate)
                 .status(status)
+                .securityPin(this.securityPin)
+                .build();
+    }
+
+    public Order withRestaurant(Restaurant restaurant){
+        return Order.builder()
+                .id(this.id)
+                .restaurant(restaurant)
+                .chefId(this.chefId)
+                .dishes(this.dishes)
+                .customerId(this.customerId)
+                .orderDate(this.orderDate)
+                .status(this.status)
+                .securityPin(this.securityPin)
+                .build();
+    }
+
+    public Order withDishes(List<OrderDish> dishes){
+        return Order.builder()
+                .id(this.id)
+                .restaurant(this.restaurant)
+                .chefId(this.chefId)
+                .dishes(dishes)
+                .customerId(this.customerId)
+                .orderDate(this.orderDate)
+                .status(this.status)
+                .securityPin(this.securityPin)
+                .build();
+    }
+
+    public Order withSecurityPin(String securityPin){
+        return Order.builder()
+                .id(this.id)
+                .restaurant(this.restaurant)
+                .chefId(this.chefId)
+                .dishes(this.dishes)
+                .customerId(this.customerId)
+                .orderDate(this.orderDate)
+                .status(this.status)
+                .securityPin(securityPin)
                 .build();
     }
 
@@ -144,11 +195,15 @@ public class Order {
         return orderDate;
     }
 
-    public Long getRestaurantId() {
-        return restaurantId;
+    public Restaurant getRestaurant() {
+        return restaurant;
     }
 
     public OrderStatus getStatus() {
         return status;
+    }
+
+    public String getSecurityPin(){
+        return securityPin;
     }
 }
