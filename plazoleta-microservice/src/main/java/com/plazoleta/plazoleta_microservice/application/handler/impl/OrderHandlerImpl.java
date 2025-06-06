@@ -3,8 +3,8 @@ package com.plazoleta.plazoleta_microservice.application.handler.impl;
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IOrderHandler;
+import com.plazoleta.plazoleta_microservice.application.mapper.IOrderRequestMapper;
 import com.plazoleta.plazoleta_microservice.application.mapper.IOrderResponseMapper;
-import com.plazoleta.plazoleta_microservice.application.mapper.OrderRequestMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
@@ -19,13 +19,12 @@ import java.util.List;
 @Transactional
 public class OrderHandlerImpl implements IOrderHandler {
     private final IOrderServicePort orderServicePort;
-    private final OrderRequestMapper orderRequestMapper;
+    private final IOrderRequestMapper orderRequestMapper;
     private final IOrderResponseMapper orderResponseMapper;
 
     @Override
     public void createOrder(CreateOrderRequestDto createOrderRequestDto) {
-        Order order = orderRequestMapper.toDomain(createOrderRequestDto);
-
+        Order order = orderRequestMapper.toOrder(createOrderRequestDto);
         orderServicePort.createOrder(order);
     }
 
