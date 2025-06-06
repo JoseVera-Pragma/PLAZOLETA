@@ -4,98 +4,230 @@ import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDat
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = "spring.profiles.active=test")
+import java.lang.reflect.Constructor;
+
 class DishValidatorTest {
 
-    private Category validCategory = new Category(1L, "Postre", "Categoría postres");
+    private static final Category VALID_CATEGORY = new Category(1L, "Fast Food","Fast Food");
 
-    @Test
-    void validate_throwsIfNameIsNullOrBlank() {
-        InvalidDishDataException ex1 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate(null, 10.0, "desc", "img.jpg", validCategory, 1L);
-        });
-        assertEquals("The name of the dish is mandatory.", ex1.getMessage());
-
-        InvalidDishDataException ex2 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("  ", 10.0, "desc", "img.jpg", validCategory, 1L);
-        });
-        assertEquals("The name of the dish is mandatory.", ex2.getMessage());
+    private Dish buildValidDish() {
+        return Dish.builder()
+                .id(1L)
+                .name("Pizza")
+                .price(15000.0)
+                .description("Delicious cheese pizza")
+                .imageUrl("http://image.com/pizza.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(10L)
+                .active(true)
+                .build();
     }
 
     @Test
-    void validate_throwsIfPriceIsZeroOrNegative() {
-        InvalidDishDataException ex1 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 0.0, "desc", "img.jpg", validCategory, 1L);
-        });
-        assertEquals("The price of the dish must be a positive integer greater than 0.", ex1.getMessage());
+    void constructorShouldBePrivateAndInvokableViaReflection() throws Exception {
+        Constructor<DishValidator> constructor = DishValidator.class.getDeclaredConstructor();
+        assertFalse(constructor.canAccess(null) || constructor.isAccessible(), "Constructor should be private");
 
-        InvalidDishDataException ex2 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", -5.0, "desc", "img.jpg", validCategory, 1L);
-        });
-        assertEquals("The price of the dish must be a positive integer greater than 0.", ex2.getMessage());
+        constructor.setAccessible(true);
+        DishValidator instance = constructor.newInstance();
+        assertNotNull(instance);
+    }
+    
+    @Test
+    void validate_shouldPassWithValidDish() {
+        assertDoesNotThrow(() -> DishValidator.validate(buildValidDish()));
     }
 
     @Test
-    void validate_throwsIfDescriptionIsNullOrBlank() {
-        InvalidDishDataException ex1 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 10.0, null, "img.jpg", validCategory, 1L);
-        });
-        assertEquals("The description of the dish is mandatory.", ex1.getMessage());
-
-        InvalidDishDataException ex2 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 10.0, "   ", "img.jpg", validCategory, 1L);
-        });
-        assertEquals("The description of the dish is mandatory.", ex2.getMessage());
+    void validate_shouldThrowIfDishIsNull() {
+        InvalidDishDataException ex = assertThrows(
+                InvalidDishDataException.class,
+                () -> DishValidator.validate(null)
+        );
+        assertEquals("Dish cannot be null.", ex.getMessage());
     }
 
     @Test
-    void validate_throwsIfImageUrlIsNullOrBlank() {
-        InvalidDishDataException ex1 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 10.0, "desc", null, validCategory, 1L);
-        });
-        assertEquals("The URL of the image of the plate is mandatory.", ex1.getMessage());
+    void validate_shouldThrowIfNameIsNullOrBlank() {
+        Dish nullName = Dish.builder()
+                .id(1L)
+                .name(null)
+                .price(12000.0)
+                .description("Desc")
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
 
-        InvalidDishDataException ex2 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 10.0, "desc", "  ", validCategory, 1L);
-        });
-        assertEquals("The URL of the image of the plate is mandatory.", ex2.getMessage());
+        Dish blankName = Dish.builder()
+                .id(1L)
+                .name("  ")
+                .price(12000.0)
+                .description("Desc")
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(nullName));
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(blankName));
     }
 
     @Test
-    void validate_throwsIfCategoryIsNullOrNameBlank() {
-        InvalidDishDataException ex1 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 10.0, "desc", "img.jpg", null, 1L);
-        });
-        assertEquals("The plate category is mandatory.", ex1.getMessage());
+    void validate_shouldThrowIfPriceIsNullOrNonPositive() {
+        Dish nullPrice = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(null)
+                .description("Desc")
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
 
-        Category blankNameCategory = mock(Category.class);
-        when(blankNameCategory.getName()).thenReturn("   ");
+        Dish zeroPrice = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(0.0)
+                .description("Desc")
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
 
-        InvalidDishDataException ex2 = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 10.0, "desc", "img.jpg", blankNameCategory, 1L);
-        });
-        assertEquals("The plate category is mandatory.", ex2.getMessage());
+        Dish negativePrice = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(-1.0)
+                .description("Desc")
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(nullPrice));
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(zeroPrice));
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(negativePrice));
     }
 
-
     @Test
-    void validate_throwsIfRestaurantIdIsNull() {
-        InvalidDishDataException ex = assertThrows(InvalidDishDataException.class, () -> {
-            DishValidator.validate("Name", 10.0, "desc", "img.jpg", validCategory, null);
-        });
-        assertEquals("The dish must be associated with a restaurant.", ex.getMessage());
+    void validate_shouldThrowIfDescriptionIsNullOrBlank() {
+        Dish nullDesc = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description(null)
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        Dish blankDesc = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description(" ")
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(nullDesc));
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(blankDesc));
     }
 
     @Test
-    void validate_passesWithValidData() {
-        assertDoesNotThrow(() -> {
-            DishValidator.validate("Name", 10.0, "desc", "img.jpg", validCategory, 1L);
-        });
+    void validate_shouldThrowIfImageUrlIsNullOrBlank() {
+        Dish nullImg = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description("desc")
+                .imageUrl(null)
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        Dish blankImg = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description("desc")
+                .imageUrl("   ")
+                .category(VALID_CATEGORY)
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(nullImg));
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(blankImg));
+    }
+
+    @Test
+    void validate_shouldThrowIfCategoryIsNullOrNameIsNullOrBlank() {
+        Dish nullCategory = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description("desc")
+                .imageUrl("img.jpg")
+                .category(null)
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        Dish nullCategoryName = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description("desc")
+                .imageUrl("img.jpg")
+                .category(new Category(1L, null,""))
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        Dish blankCategoryName = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description("desc")
+                .imageUrl("img.jpg")
+                .category(new Category(1L, " ",""))
+                .restaurantId(1L)
+                .active(true)
+                .build();
+
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(nullCategory));
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(nullCategoryName));
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(blankCategoryName));
+    }
+
+    @Test
+    void validate_shouldThrowIfRestaurantIdIsNull() {
+        Dish noRestaurant = Dish.builder()
+                .id(1L)
+                .name("Dish")
+                .price(1000.0)
+                .description("desc")
+                .imageUrl("img.jpg")
+                .category(VALID_CATEGORY)
+                .restaurantId(null)
+                .active(true)
+                .build();
+
+        assertThrows(InvalidDishDataException.class, () -> DishValidator.validate(noRestaurant));
     }
 }

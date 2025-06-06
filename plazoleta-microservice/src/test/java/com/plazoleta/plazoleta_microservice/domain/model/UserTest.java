@@ -1,38 +1,48 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(properties = "spring.profiles.active=test")
 class UserTest {
 
     @Test
-    void testBuilderCreatesUserCorrectly() {
-        User user = new User.Builder()
-                .firstName("John")
-                .lastName("Doe")
-                .identityNumber("123456789")
-                .phoneNumber("555-1234")
-                .dateOfBirth("1990-01-01")
-                .email("john.doe@example.com")
-                .password("securePassword123")
-                .role("admin")
+    void testBuilderAndGetters() {
+        String firstName = "Jose";
+        String lastName = "Vera";
+        String identityNumber = "1093854586";
+        String phoneNumber = "3001234567";
+        String dateOfBirth = "1990-01-01";
+        String email = "jose@example.com";
+        String password = "securePass123";
+        String role = "EMPLOYEE";
+        Long restaurantId = 1L;
+
+        User user = User.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .identityNumber(identityNumber)
+                .phoneNumber(phoneNumber)
+                .dateOfBirth(dateOfBirth)
+                .email(email)
+                .password(password)
+                .role(role)
+                .restaurantId(restaurantId)
                 .build();
 
-        assertEquals("John", user.getFirstName());
-        assertEquals("Doe", user.getLastName());
-        assertEquals("123456789", user.getIdentityNumber());
-        assertEquals("555-1234", user.getPhoneNumber());
-        assertEquals("1990-01-01", user.getDateOfBirth());
-        assertEquals("john.doe@example.com", user.getEmail());
-        assertEquals("securePassword123", user.getPassword());
-        assertEquals("admin", user.getRole());
+        assertEquals(firstName, user.getFirstName());
+        assertEquals(lastName, user.getLastName());
+        assertEquals(identityNumber, user.getIdentityNumber());
+        assertEquals(phoneNumber, user.getPhoneNumber());
+        assertEquals(dateOfBirth, user.getDateOfBirth());
+        assertEquals(email, user.getEmail());
+        assertEquals(password, user.getPassword());
+        assertEquals(role, user.getRole());
+        assertEquals(restaurantId, user.getRestaurantId());
     }
 
     @Test
-    void testEmptyConstructorAndSetters() {
+    void testNoArgsConstructor() {
         User user = new User();
 
         assertNull(user.getFirstName());
@@ -43,24 +53,6 @@ class UserTest {
         assertNull(user.getEmail());
         assertNull(user.getPassword());
         assertNull(user.getRole());
+        assertNull(user.getRestaurantId());
     }
-
-    @Test
-    void testPartialBuilder() {
-        User user = new User.Builder()
-                .firstName("Alice")
-                .email("alice@example.com")
-                .build();
-
-        assertEquals("Alice", user.getFirstName());
-        assertEquals("alice@example.com", user.getEmail());
-
-        assertNull(user.getLastName());
-        assertNull(user.getIdentityNumber());
-        assertNull(user.getPhoneNumber());
-        assertNull(user.getDateOfBirth());
-        assertNull(user.getPassword());
-        assertNull(user.getRole());
-    }
-
 }

@@ -31,65 +31,65 @@ class CategoryUseCaseTest {
 
     @Test
     void saveCategory_whenNameExists_throwsException() {
-        when(persistencePort.findByName("Postre")).thenReturn(Optional.of(category));
+        when(persistencePort.findCategoryByName("Postre")).thenReturn(Optional.of(category));
 
         CategoryAlreadyExistsException ex = assertThrows(CategoryAlreadyExistsException.class, () -> {
             useCase.saveCategory(new Category(null, "Postre", "Nueva descripción"));
         });
 
         assertTrue(ex.getMessage().contains("already exists"));
-        verify(persistencePort).findByName("Postre");
-        verify(persistencePort, never()).save(any());
+        verify(persistencePort).findCategoryByName("Postre");
+        verify(persistencePort, never()).saveCategory(any());
     }
 
     @Test
     void saveCategory_successful() {
-        when(persistencePort.findByName("Postre")).thenReturn(Optional.empty());
-        when(persistencePort.save(any(Category.class))).thenReturn(category);
+        when(persistencePort.findCategoryByName("Postre")).thenReturn(Optional.empty());
+        when(persistencePort.saveCategory(any(Category.class))).thenReturn(category);
 
         Category saved = useCase.saveCategory(new Category(null, "Postre", "Descripción"));
 
         assertEquals(category, saved);
-        verify(persistencePort).findByName("Postre");
-        verify(persistencePort).save(any(Category.class));
+        verify(persistencePort).findCategoryByName("Postre");
+        verify(persistencePort).saveCategory(any(Category.class));
     }
 
     @Test
     void updateCategory_whenIdNotFound_throwsException() {
-        when(persistencePort.findById(1L)).thenReturn(Optional.empty());
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.empty());
 
         CategoryNotFoundException ex = assertThrows(CategoryNotFoundException.class, () -> {
             useCase.updateCategory(1L, new Category(null, "Postre", "Desc"));
         });
 
         assertTrue(ex.getMessage().contains("not found"));
-        verify(persistencePort).findById(1L);
-        verify(persistencePort, never()).findByName(any());
-        verify(persistencePort, never()).save(any());
+        verify(persistencePort).findCategoryById(1L);
+        verify(persistencePort, never()).findCategoryByName(any());
+        verify(persistencePort, never()).saveCategory(any());
     }
 
     @Test
     void updateCategory_nameExistsWithDifferentId_throwsException() {
         Category otherCategory = new Category(2L, "Postre", "Otra descripción");
 
-        when(persistencePort.findById(1L)).thenReturn(Optional.of(category));
-        when(persistencePort.findByName("Postre")).thenReturn(Optional.of(otherCategory));
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.of(category));
+        when(persistencePort.findCategoryByName("Postre")).thenReturn(Optional.of(otherCategory));
 
         CategoryAlreadyExistsException ex = assertThrows(CategoryAlreadyExistsException.class, () -> {
             useCase.updateCategory(1L, new Category(null, "Postre", "Desc actualizada"));
         });
 
         assertTrue(ex.getMessage().contains("already exists"));
-        verify(persistencePort).findById(1L);
-        verify(persistencePort).findByName("Postre");
-        verify(persistencePort, never()).save(any());
+        verify(persistencePort).findCategoryById(1L);
+        verify(persistencePort).findCategoryByName("Postre");
+        verify(persistencePort, never()).saveCategory(any());
     }
 
     @Test
     void updateCategory_successful() {
-        when(persistencePort.findById(1L)).thenReturn(Optional.of(category));
-        when(persistencePort.findByName("Postre")).thenReturn(Optional.of(category));
-        when(persistencePort.save(any(Category.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.of(category));
+        when(persistencePort.findCategoryByName("Postre")).thenReturn(Optional.of(category));
+        when(persistencePort.saveCategory(any(Category.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Category updated = new Category(null, "Postre", "Descripción actualizada");
         Category result = useCase.updateCategory(1L, updated);
@@ -98,9 +98,9 @@ class CategoryUseCaseTest {
         assertEquals("Postre", result.getName());
         assertEquals("Descripción actualizada", result.getDescription());
 
-        verify(persistencePort).findById(1L);
-        verify(persistencePort).findByName("Postre");
-        verify(persistencePort).save(any(Category.class));
+        verify(persistencePort).findCategoryById(1L);
+        verify(persistencePort).findCategoryByName("Postre");
+        verify(persistencePort).saveCategory(any(Category.class));
     }
 
     @Test
@@ -109,24 +109,24 @@ class CategoryUseCaseTest {
         Category originalCategory = new Category(idToUpdate, "Original", "Desc");
         Category updatedCategory = new Category(null, "Updated", "Desc");
 
-        when(persistencePort.findById(idToUpdate)).thenReturn(Optional.of(originalCategory));
-        when(persistencePort.findByName("Updated")).thenReturn(Optional.empty());
-        when(persistencePort.save(any())).thenReturn(updatedCategory);
+        when(persistencePort.findCategoryById(idToUpdate)).thenReturn(Optional.of(originalCategory));
+        when(persistencePort.findCategoryByName("Updated")).thenReturn(Optional.empty());
+        when(persistencePort.saveCategory(any())).thenReturn(updatedCategory);
 
         Category result = useCase.updateCategory(idToUpdate, updatedCategory);
         assertEquals(updatedCategory.getName(), result.getName());
 
         Category oldCategorySameId = new Category(idToUpdate, "Updated", "Desc");
 
-        when(persistencePort.findByName("Updated")).thenReturn(Optional.of(oldCategorySameId));
-        when(persistencePort.save(any())).thenReturn(updatedCategory);
+        when(persistencePort.findCategoryByName("Updated")).thenReturn(Optional.of(oldCategorySameId));
+        when(persistencePort.saveCategory(any())).thenReturn(updatedCategory);
 
         result = useCase.updateCategory(idToUpdate, updatedCategory);
         assertEquals(updatedCategory.getName(), result.getName());
 
         Category oldCategoryDifferentId = new Category(2L, "Updated", "Desc");
 
-        when(persistencePort.findByName("Updated")).thenReturn(Optional.of(oldCategoryDifferentId));
+        when(persistencePort.findCategoryByName("Updated")).thenReturn(Optional.of(oldCategoryDifferentId));
 
         CategoryAlreadyExistsException exception = assertThrows(CategoryAlreadyExistsException.class, () -> {
             useCase.updateCategory(idToUpdate, updatedCategory);
@@ -136,77 +136,77 @@ class CategoryUseCaseTest {
 
     @Test
     void getCategoryById_whenExists_returnsCategory() {
-        when(persistencePort.findById(1L)).thenReturn(Optional.of(category));
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.of(category));
 
         Category found = useCase.getCategoryById(1L);
 
         assertEquals(category, found);
-        verify(persistencePort).findById(1L);
+        verify(persistencePort).findCategoryById(1L);
     }
 
     @Test
     void getCategoryById_whenNotFound_throwsException() {
-        when(persistencePort.findById(1L)).thenReturn(Optional.empty());
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.empty());
 
         CategoryNotFoundException ex = assertThrows(CategoryNotFoundException.class, () -> {
             useCase.getCategoryById(1L);
         });
 
         assertTrue(ex.getMessage().contains("not found"));
-        verify(persistencePort).findById(1L);
+        verify(persistencePort).findCategoryById(1L);
     }
 
     @Test
     void getCategoryByName_whenExists_returnsCategory() {
-        when(persistencePort.findByName("Postre")).thenReturn(Optional.of(category));
+        when(persistencePort.findCategoryByName("Postre")).thenReturn(Optional.of(category));
 
         Category found = useCase.getCategoryByName("Postre");
 
         assertEquals(category, found);
-        verify(persistencePort).findByName("Postre");
+        verify(persistencePort).findCategoryByName("Postre");
     }
 
     @Test
     void getCategoryByName_whenNotFound_throwsException() {
-        when(persistencePort.findByName("Postre")).thenReturn(Optional.empty());
+        when(persistencePort.findCategoryByName("Postre")).thenReturn(Optional.empty());
 
         CategoryNotFoundException ex = assertThrows(CategoryNotFoundException.class, () -> {
             useCase.getCategoryByName("Postre");
         });
 
         assertTrue(ex.getMessage().contains("not found"));
-        verify(persistencePort).findByName("Postre");
+        verify(persistencePort).findCategoryByName("Postre");
     }
 
     @Test
     void getAllCategories_returnsList() {
         List<Category> categories = List.of(category, new Category(2L, "Bebida", "Descripción bebidas"));
-        when(persistencePort.findAll()).thenReturn(categories);
+        when(persistencePort.findAllCategories()).thenReturn(categories);
 
         List<Category> result = useCase.getAllCategories();
 
         assertEquals(2, result.size());
         assertTrue(result.contains(category));
-        verify(persistencePort).findAll();
+        verify(persistencePort).findAllCategories();
     }
 
     @Test
     void deleteCategoryById_whenNotFound_throwsException() {
-        when(persistencePort.findById(1L)).thenReturn(Optional.empty());
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.empty());
 
         CategoryNotFoundException ex = assertThrows(CategoryNotFoundException.class, () -> {
             useCase.deleteCategoryById(1L);
         });
 
         assertTrue(ex.getMessage().contains("not found"));
-        verify(persistencePort).findById(1L);
+        verify(persistencePort).findCategoryById(1L);
         verify(persistencePort, never()).existsDishWithCategoryId(anyLong());
-        verify(persistencePort, never()).delete(anyLong());
+        verify(persistencePort, never()).deleteCategory(anyLong());
     }
 
     @Test
     void deleteCategoryById_whenCategoryInUse_throwsException() {
-        when(persistencePort.findById(1L)).thenReturn(Optional.of(category));
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.of(category));
         when(persistencePort.existsDishWithCategoryId(1L)).thenReturn(true);
 
         CategoryInUseException ex = assertThrows(CategoryInUseException.class, () -> {
@@ -214,20 +214,20 @@ class CategoryUseCaseTest {
         });
 
         assertTrue(ex.getMessage().contains("currently in use"));
-        verify(persistencePort).findById(1L);
+        verify(persistencePort).findCategoryById(1L);
         verify(persistencePort).existsDishWithCategoryId(1L);
-        verify(persistencePort, never()).delete(anyLong());
+        verify(persistencePort, never()).deleteCategory(anyLong());
     }
 
     @Test
     void deleteCategoryById_successful() {
-        when(persistencePort.findById(1L)).thenReturn(Optional.of(category));
+        when(persistencePort.findCategoryById(1L)).thenReturn(Optional.of(category));
         when(persistencePort.existsDishWithCategoryId(1L)).thenReturn(false);
 
         useCase.deleteCategoryById(1L);
 
-        verify(persistencePort).findById(1L);
+        verify(persistencePort).findCategoryById(1L);
         verify(persistencePort).existsDishWithCategoryId(1L);
-        verify(persistencePort).delete(1L);
+        verify(persistencePort).deleteCategory(1L);
     }
 }

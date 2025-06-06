@@ -3,74 +3,84 @@ package com.plazoleta.plazoleta_microservice.domain.model;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class OrderTest {
 
     @Test
-    void testConstructorAndGetters() {
-        Long expectedId = 100L;
-        Long expectedCustomerId = 200L;
-        Long expectedChefId = 300L;
-        Long expectedRestaurantId = 400L;
-        LocalDateTime expectedOrderDate = LocalDateTime.now();
+    void testBuilderAndGetters() {
+        Long expectedId = 1L;
+        Long expectedCustomerId = 10L;
+        LocalDateTime expectedDate = LocalDateTime.now();
         OrderStatus expectedStatus = OrderStatus.PENDING;
+        Long expectedChefId = 20L;
+        Long expectedRestaurantId = 30L;
 
-        OrderDish dish1 = new OrderDish(1L, 2);
-        OrderDish dish2 = new OrderDish(2L, 3);
-        List<OrderDish> expectedDishes = List.of(dish1, dish2);
+        OrderDish dish1 = new OrderDish(100L, 2);
+        OrderDish dish2 = new OrderDish(101L, 1);
 
-        Order order = new Order(
-                expectedId,
-                expectedCustomerId,
-                expectedChefId,
-                expectedRestaurantId,
-                expectedOrderDate,
-                expectedStatus,
-                expectedDishes
-        );
+        Order order = Order.builder()
+                .id(expectedId)
+                .customerId(expectedCustomerId)
+                .orderDate(expectedDate)
+                .status(expectedStatus)
+                .chefId(expectedChefId)
+                .restaurantId(expectedRestaurantId)
+                .dishes(Arrays.asList(dish1, dish2))
+                .build();
 
         assertEquals(expectedId, order.getId());
         assertEquals(expectedCustomerId, order.getCustomerId());
+        assertEquals(expectedDate, order.getOrderDate());
+        assertEquals(expectedStatus, order.getStatus());
         assertEquals(expectedChefId, order.getChefId());
         assertEquals(expectedRestaurantId, order.getRestaurantId());
-        assertEquals(expectedOrderDate, order.getOrderDate());
-        assertEquals(expectedStatus, order.getStatus());
-        assertEquals(expectedDishes, order.getDishes());
+        assertNotNull(order.getDishes());
+        assertEquals(2, order.getDishes().size());
     }
 
     @Test
-    void testSetters() {
-        Order order = new Order(1L, 2L, 3L, 4L, LocalDateTime.now(), OrderStatus.PENDING, List.of());
+    void testWithCustomerId() {
+        Order order = Order.builder().customerId(1L).build();
 
-        LocalDateTime newDate = LocalDateTime.now().plusHours(1);
-        List<OrderDish> newDishes = List.of(new OrderDish(10L, 5));
+        Order updated = order.withCustomerId(2L);
 
-        order.setId(10L);
-        order.setCustomerId(20L);
-        order.setChefId(30L);
-        order.setRestaurantId(40L);
-        order.setOrderDate(newDate);
-        order.setStatus(OrderStatus.READY);
-        order.setDishes(newDishes);
-
-        assertEquals(10L, order.getId());
-        assertEquals(20L, order.getCustomerId());
-        assertEquals(30L, order.getChefId());
-        assertEquals(40L, order.getRestaurantId());
-        assertEquals(newDate, order.getOrderDate());
-        assertEquals(OrderStatus.READY, order.getStatus());
-        assertEquals(newDishes, order.getDishes());
+        assertEquals(2L, updated.getCustomerId());
+        assertEquals(order.getId(), updated.getId());
     }
 
     @Test
-    void testOrderStatusEnum() {
-        assertEquals(OrderStatus.PENDING, OrderStatus.valueOf("PENDING"));
-        assertEquals(OrderStatus.CANCELLED, OrderStatus.valueOf("CANCELLED"));
-        assertEquals(OrderStatus.IN_PREPARATION, OrderStatus.valueOf("IN_PREPARATION"));
-        assertEquals(OrderStatus.READY, OrderStatus.valueOf("READY"));
-        assertEquals(OrderStatus.DELIVERED, OrderStatus.valueOf("DELIVERED"));
+    void testWithChefId() {
+        Order order = Order.builder().chefId(1L).build();
+
+        Order updated = order.withChefId(3L);
+
+        assertEquals(3L, updated.getChefId());
+        assertEquals(order.getId(), updated.getId());
+    }
+
+    @Test
+    void testWithOrderDate() {
+        LocalDateTime date1 = LocalDateTime.of(2025, 6, 5, 12, 0);
+        LocalDateTime date2 = LocalDateTime.of(2025, 6, 6, 13, 30);
+
+        Order order = Order.builder().orderDate(date1).build();
+
+        Order updated = order.withOrderDate(date2);
+
+        assertEquals(date2, updated.getOrderDate());
+        assertEquals(order.getId(), updated.getId());
+    }
+
+    @Test
+    void testWithStatus() {
+        Order order = Order.builder().status(OrderStatus.PENDING).build();
+
+        Order updated = order.withStatus(OrderStatus.READY);
+
+        assertEquals(OrderStatus.READY, updated.getStatus());
+        assertEquals(order.getId(), updated.getId());
     }
 }

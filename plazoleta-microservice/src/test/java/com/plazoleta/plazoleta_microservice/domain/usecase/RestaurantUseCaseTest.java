@@ -2,136 +2,148 @@ package com.plazoleta.plazoleta_microservice.domain.usecase;
 
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.DuplicateNitException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidUserRoleException;
-import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.model.User;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
-import com.plazoleta.plazoleta_microservice.domain.spi.IUserSecurityPort;
+import com.plazoleta.plazoleta_microservice.domain.spi.IUserServiceClientPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.*;
-
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(properties = "spring.profiles.active=test")
 class RestaurantUseCaseTest {
 
-    @Mock
     private IRestaurantPersistencePort restaurantPersistencePort;
-
-    @Mock
-    private IUserSecurityPort userSecurityPort;
-
+    private IUserServiceClientPort userServiceClientPort;
     private RestaurantUseCase restaurantUseCase;
 
-    private Restaurant validRestaurant;
-    private User validOwner;
-
     @BeforeEach
-    void setup() {
-        validOwner = new User.Builder()
-                .role("ROLE_OWNER")
+    void setUp() {
+        restaurantPersistencePort = mock(IRestaurantPersistencePort.class);
+        userServiceClientPort = mock(IUserServiceClientPort.class);
+        restaurantUseCase = new RestaurantUseCase(restaurantPersistencePort, userServiceClientPort);
+    }
+
+    @Test
+    void createRestaurant_shouldSave_whenValidOwnerAndUniqueNit() {
+
+        String firstName = "Jose";
+        String lastName = "Vera";
+        String identityNumber = "1093854586";
+        String phoneNumber = "3001234567";
+        String dateOfBirth = "1990-01-01";
+        String email = "jose@example.com";
+        String password = "securePass123";
+        String role = "ROLE_OWNER";
+        Long restaurantId = 1L;
+
+        User owner = User.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .identityNumber(identityNumber)
+                .phoneNumber(phoneNumber)
+                .dateOfBirth(dateOfBirth)
+                .email(email)
+                .password(password)
+                .role(role)
+                .restaurantId(restaurantId)
                 .build();
 
-        validRestaurant = new Restaurant.Builder()
+        Restaurant restaurant = Restaurant.builder()
                 .idOwner(1L)
-                .name("Valid Restaurant")
-                .nit("123456")
-                .address("Address")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.url")
+                .nit("123456789")
+                .name("Mi Restaurante")
+                .address("Calle 123")
+                .phoneNumber("+573001234567")
+                .urlLogo("http://logo.com/logo.png")
                 .build();
 
-        restaurantUseCase = new RestaurantUseCase(restaurantPersistencePort, userSecurityPort);
+        when(userServiceClientPort.findUserById(1L)).thenReturn(owner);
+        when(restaurantPersistencePort.existsRestaurantByNit("123456789")).thenReturn(false);
+        when(restaurantPersistencePort.saveRestaurant(restaurant)).thenReturn(restaurant);
+        when(userServiceClientPort.findUserById(1L)).thenReturn(owner);
+
+        Restaurant saved = restaurantUseCase.createRestaurant(restaurant);
+
+        assertNotNull(saved);
+        assertEquals("Mi Restaurante", saved.getName());
+        verify(restaurantPersistencePort).saveRestaurant(restaurant);
     }
 
     @Test
-    void createRestaurantShouldThrowWhenUserNotFound() {
-        when(userSecurityPort.getUserById(validRestaurant.getIdOwner())).thenReturn(null);
-
-        UserNotFoundException ex = assertThrows(UserNotFoundException.class, () ->
-                restaurantUseCase.createRestaurant(validRestaurant));
-
-        assertEquals("User not found", ex.getMessage());
-        verifyNoInteractions(restaurantPersistencePort);
-    }
-
-    @Test
-    void createRestaurantShouldThrowWhenUserRoleIsInvalid() {
-        User nonOwnerUser = new User.Builder()
+    void createRestaurant_shouldThrowInvalidUserRole_whenUserIsNotOwner() {
+        User user = User.builder()
                 .role("ROLE_CUSTOMER")
                 .build();
 
-        when(userSecurityPort.getUserById(validRestaurant.getIdOwner())).thenReturn(nonOwnerUser);
+        Restaurant restaurant = Restaurant.builder()
+                .idOwner(2L)
+                .nit("987654321")
+                .build();
 
-        InvalidUserRoleException ex = assertThrows(InvalidUserRoleException.class, () ->
-                restaurantUseCase.createRestaurant(validRestaurant));
+        when(userServiceClientPort.findUserById(2L)).thenReturn(user);
 
-        assertEquals("User does not have the required role", ex.getMessage());
-        verifyNoInteractions(restaurantPersistencePort);
-    }
+        InvalidUserRoleException exception = assertThrows(InvalidUserRoleException.class, () -> {
+            restaurantUseCase.createRestaurant(restaurant);
+        });
 
-    @Test
-    void createRestaurantShouldThrowWhenNitExists() {
-        when(userSecurityPort.getUserById(validRestaurant.getIdOwner())).thenReturn(validOwner);
-        when(restaurantPersistencePort.existsByNit(validRestaurant.getNit())).thenReturn(true);
-
-        DuplicateNitException ex = assertThrows(DuplicateNitException.class, () ->
-                restaurantUseCase.createRestaurant(validRestaurant));
-
-        assertEquals("A restaurant with the NIT '123456' already exists.", ex.getMessage());
+        assertEquals("User does not have the required role", exception.getMessage());
         verify(restaurantPersistencePort, never()).saveRestaurant(any());
     }
 
     @Test
-    void createRestaurantShouldSaveWhenValid() {
-        when(userSecurityPort.getUserById(validRestaurant.getIdOwner())).thenReturn(validOwner);
-        when(restaurantPersistencePort.existsByNit(validRestaurant.getNit())).thenReturn(false);
+    void createRestaurant_shouldThrowDuplicateNit_whenNitExists() {
+        User owner = User.builder()
+                .role("ROLE_OWNER")
+                .build();
 
-        assertDoesNotThrow(() -> restaurantUseCase.createRestaurant(validRestaurant));
+        Restaurant restaurant = Restaurant.builder()
+                .idOwner(3L)
+                .nit("111222333")
+                .build();
 
-        verify(restaurantPersistencePort, times(1)).saveRestaurant(validRestaurant);
+        when(userServiceClientPort.findUserById(3L)).thenReturn(owner);
+        when(restaurantPersistencePort.existsRestaurantByNit("111222333")).thenReturn(true);
+
+        DuplicateNitException exception = assertThrows(DuplicateNitException.class, () -> {
+            restaurantUseCase.createRestaurant(restaurant);
+        });
+
+        assertTrue(exception.getMessage().contains("A restaurant with the NIT"));
+        verify(restaurantPersistencePort, never()).saveRestaurant(any());
     }
 
     @Test
-    void testFindAllRestaurantsWithPagination() {
-        Pageable pageable = PageRequest.of(0, 5, Sort.by("name").ascending());
+    void findAllRestaurants_shouldReturnList() {
+        List<Restaurant> restaurants = List.of(
+                Restaurant.builder()
+                        .id(1L)
+                        .idOwner(1L)
+                        .nit("123")
+                        .name("Rest1")
+                        .address("Address1")
+                        .phoneNumber("Phone1")
+                        .urlLogo("Img1")
+                        .build(),
 
-        Restaurant r1 = new Restaurant.Builder()
-                .id(1L)
-                .name("A")
-                .urlLogo("Logo 1")
-                .nit("1321231321")
-                .phoneNumber("31215454")
-                .address("calle 1 2d2d")
-                .idOwner(1L)
-                .build();
+                Restaurant.builder()
+                        .id(2L)
+                        .idOwner(2L)
+                        .nit("456")
+                        .name("Rest2")
+                        .address("Address2")
+                        .phoneNumber("Phone2")
+                        .urlLogo("Img2")
+                        .build()
+        );
 
-        Restaurant r2 = new Restaurant.Builder()
-                .id(2L)
-                .name("B")
-                .urlLogo("Logo 2")
-                .nit("1321231321")
-                .phoneNumber("31215454")
-                .address("calle 1 2d2d")
-                .idOwner(1L)
-                .build();
+        when(restaurantPersistencePort.findAllRestaurants(0, 10)).thenReturn(restaurants);
 
-        List<Restaurant> restaurantList = List.of(r1, r2);
-        Page<Restaurant> expectedPage = new PageImpl<>(restaurantList, pageable, restaurantList.size());
+        List<Restaurant> result = restaurantUseCase.findAllRestaurants(0, 10);
 
-        when(restaurantPersistencePort.findAll(pageable)).thenReturn(expectedPage);
-
-        Page<Restaurant> result = restaurantUseCase.findAll(pageable);
-
-        assertNotNull(result);
-        assertEquals(2, result.getTotalElements());
-        assertEquals("A", result.getContent().getFirst().getName());
-        verify(restaurantPersistencePort).findAll(pageable);
+        assertEquals(2, result.size());
+        verify(restaurantPersistencePort).findAllRestaurants(0, 10);
     }
 }

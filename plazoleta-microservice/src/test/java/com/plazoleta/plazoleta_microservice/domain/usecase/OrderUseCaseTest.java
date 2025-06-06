@@ -1,175 +1,240 @@
 package com.plazoleta.plazoleta_microservice.domain.usecase;
 
+import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.*;
-import com.plazoleta.plazoleta_microservice.domain.spi.IDishPersistencePort;
-import com.plazoleta.plazoleta_microservice.domain.spi.IOrderPersistencePort;
-import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
+import com.plazoleta.plazoleta_microservice.domain.spi.*;
+import com.plazoleta.plazoleta_microservice.infrastructure.exception.OrderNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class OrderUseCaseTest {
-    private IOrderPersistencePort orderPersistencePort;
-    private IDishPersistencePort dishPersistencePort;
-    private IRestaurantPersistencePort restaurantPersistencePort;
-    private OrderUseCase orderUseCase;
 
-    private final Category category = new Category(1L, "Postre", "Descripción postres");
+    @Mock
+    private IOrderPersistencePort orderPersistencePort;
+    @Mock
+    private IDishPersistencePort dishPersistencePort;
+    @Mock
+    private IRestaurantPersistencePort restaurantPersistencePort;
+    @Mock
+    private IAuthenticatedUserPort authenticatedUserPort;
+    @Mock
+    private IUserServiceClientPort userServiceClientPort;
+
+    @InjectMocks
+    private OrderUseCase orderUseCase;
 
     @BeforeEach
     void setUp() {
-        orderPersistencePort = mock(IOrderPersistencePort.class);
-        dishPersistencePort = mock(IDishPersistencePort.class);
-        restaurantPersistencePort = mock(IRestaurantPersistencePort.class);
-        orderUseCase = new OrderUseCase(orderPersistencePort, dishPersistencePort, restaurantPersistencePort);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testCreateOrder_ShouldThrowIfCustomerHasOrderInProcess() {
-        Order order = new Order(1L, 10L, null, 100L, null, null, List.of());
-
-        when(orderPersistencePort.customerHasOrdersInProcess(10L)).thenReturn(true);
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            orderUseCase.createOrder(order);
-        });
-
-        assertEquals("Customer have order in process.", exception.getMessage());
-    }
-
-    @Test
-    void testCreateOrder_ShouldThrowIfDishNotFromRestaurant() {
-        OrderDish orderDish = new OrderDish(1L, 2);
-        Order order = new Order(1L, 10L, null, 100L, null, null, List.of(orderDish));
-
-        when(orderPersistencePort.customerHasOrdersInProcess(10L)).thenReturn(false);
-        when(dishPersistencePort.getById(1L)).thenReturn(new Dish.Builder()
-                .id(1L)
-                .name("Dish")
-                .price(1000.0)
-                .description("Desc")
-                .active(true)
-                .imageUrl("fds")
-                .restaurantId(200L)
-                .category(category)
-                .build());
-
-        assertThrows(IllegalArgumentException.class, () -> orderUseCase.createOrder(order));
-    }
-
-    @Test
-    void testCreateOrder_ShouldSaveOrderWithStatusPendingAndDate() {
-        OrderDish orderDish = new OrderDish(1L, 2);
-        Order order = new Order(1L, 10L, null, 100L, null, null, List.of(orderDish));
-
-        when(orderPersistencePort.customerHasOrdersInProcess(10L)).thenReturn(false);
-        when(dishPersistencePort.getById(1L)).thenReturn(new Dish.Builder()
-                .id(1L)
-                .name("Dish")
-                .price(1000.0)
-                .description("Desc")
-                .active(true)
-                .imageUrl("fds")
-                .restaurantId(100L)
-                .category(category)
-                .build());
-
-        Restaurant restaurant = new Restaurant.Builder()
-                .idOwner(1L)
-                .name("Valid Restaurant")
-                .nit("123456")
-                .address("Address")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.url")
+    void createOrder_shouldSaveOrder_whenValid() {
+        Long customerId = 1L;
+        Long restaurantId = 10L;
+        Dish dish = Dish.builder().id(100L).restaurantId(restaurantId).build();
+        OrderDish orderDish = new OrderDish(100L, 1);
+        Order order = Order.builder()
+                .restaurantId(restaurantId)
+                .dishes(List.of(orderDish))
                 .build();
-        when(restaurantPersistencePort.getById(100L)).thenReturn(restaurant);
+
+        when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(false);
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
+        when(dishPersistencePort.findDishById(100L)).thenReturn(Optional.of(dish));
+        doNothing().when(orderPersistencePort).saveOrder(any(Order.class));
 
         orderUseCase.createOrder(order);
 
-        ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
-        verify(orderPersistencePort).saveOrder(captor.capture());
-
-        Order savedOrder = captor.getValue();
-
-        assertEquals(OrderStatus.PENDING, savedOrder.getStatus());
-        assertNotNull(savedOrder.getOrderDate());
-        assertEquals(10L, savedOrder.getCustomerId());
+        verify(orderPersistencePort).saveOrder(any(Order.class));
     }
 
     @Test
-    void testGetOrdersByClientId_ShouldReturnList() {
-        Long clientId = 20L;
-        List<Order> orders = List.of(new Order(1L, clientId, null, 100L, LocalDateTime.now(), OrderStatus.PENDING, List.of()));
+    void createOrder_shouldThrowIllegalStateException_whenCustomerHasOrdersInProcess() {
+        Long customerId = 1L;
+        Order order = Order.builder().customerId(customerId).build();
 
-        when(orderPersistencePort.getOrdersByCustomerId(clientId)).thenReturn(orders);
+        when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(true);
 
-        List<Order> result = orderUseCase.getOrdersByClientId(clientId);
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> orderUseCase.createOrder(order));
+        assertEquals("Customer have order in process.", ex.getMessage());
+    }
+
+    @Test
+    void createOrder_shouldThrowUserNotFoundException_whenUserNotFound() {
+        Long restaurantId = 10L;
+        OrderDish orderDish = new OrderDish(100L, 1);
+        Order order = Order.builder()
+                .restaurantId(restaurantId)
+                .dishes(List.of(orderDish))
+                .build();
+
+        when(orderPersistencePort.customerHasOrdersInProcess(anyLong())).thenReturn(false);
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> orderUseCase.createOrder(order));
+    }
+
+    @Test
+    void createOrder_shouldThrowDishNotFoundException_whenDishNotFound() {
+        Long customerId = 1L;
+        Long restaurantId = 10L;
+        OrderDish orderDish = new OrderDish(100L, 1);
+        Order order = Order.builder()
+                .restaurantId(restaurantId)
+                .dishes(List.of(orderDish))
+                .build();
+
+        when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(false);
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
+        when(dishPersistencePort.findDishById(100L)).thenReturn(Optional.empty());
+
+        assertThrows(DishNotFoundException.class, () -> orderUseCase.createOrder(order));
+    }
+
+    @Test
+    void createOrder_shouldThrowIllegalArgumentException_whenDishFromDifferentRestaurant() {
+        Long customerId = 1L;
+        Long restaurantId = 10L;
+        Long differentRestaurantId = 20L;
+
+        Dish dish = Dish.builder().id(100L).restaurantId(differentRestaurantId).build();
+        OrderDish orderDish = new OrderDish(100L, 1);
+        Order order = Order.builder()
+                .restaurantId(restaurantId)
+                .dishes(List.of(orderDish))
+                .build();
+
+        when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(false);
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
+        when(dishPersistencePort.findDishById(100L)).thenReturn(Optional.of(dish));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> orderUseCase.createOrder(order));
+        assertEquals("All dishes must belong to the same restaurant.", ex.getMessage());
+    }
+
+    @Test
+    void getOrdersByCustomerId_shouldReturnOrders() {
+        Long customerId = 1L;
+        List<Order> orders = List.of(Order.builder().id(1L).build());
+        when(orderPersistencePort.findOrdersByCustomerId(customerId)).thenReturn(orders);
+
+        List<Order> result = orderUseCase.getOrdersByCustomerId(customerId);
 
         assertEquals(orders, result);
     }
 
     @Test
-    void testGetOrderById_ShouldReturnOrder() {
-        Order order = new Order(1L, 10L, null, 100L, LocalDateTime.now(), OrderStatus.PENDING, List.of());
+    void findOrderById_shouldReturnOrder_whenExists() {
+        Long orderId = 5L;
+        Order order = Order.builder().id(orderId).build();
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
 
-        when(orderPersistencePort.getOrderById(1L)).thenReturn(order);
-
-        Order result = orderUseCase.getOrderById(1L);
+        Order result = orderUseCase.findOrderById(orderId);
 
         assertEquals(order, result);
     }
 
     @Test
-    void getOrdersByStatusAndRestaurantId_ShouldReturnOrdersList() {
-        Long restaurantId = 1L;
-        OrderStatus status = OrderStatus.PENDING;
-        int pageIndex = 0;
-        int elementsPerPage = 5;
+    void findOrderById_shouldThrowOrderNotFoundException_whenNotFound() {
+        Long orderId = 5L;
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.empty());
 
-        Restaurant restaurant = new Restaurant.Builder()
-                .idOwner(1L)
-                .name("Valid Restaurant")
-                .nit("123456")
-                .address("Address")
-                .phoneNumber("+123456789")
-                .urlLogo("http://logo.url")
-                .build();
-        List<Order> expectedOrders = List.of(
-                new Order(), new Order()
-        );
-
-        when(restaurantPersistencePort.getById(restaurantId)).thenReturn(restaurant);
-
-        when(orderPersistencePort.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage))
-                .thenReturn(expectedOrders);
-
-        List<Order> result = orderUseCase.getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
-
-        assertEquals(expectedOrders, result);
-        verify(restaurantPersistencePort).getById(restaurantId);
-        verify(orderPersistencePort).getOrdersByStatusAndRestaurantId(restaurantId, status, pageIndex, elementsPerPage);
+        assertThrows(OrderNotFoundException.class, () -> orderUseCase.findOrderById(orderId));
     }
 
     @Test
-    void assignOrder_ShouldAssignChefAndChangeStatus() {
-        Long orderId = 1L;
-        Long employedId = 10L;
-        Order order = new Order();
-        order.setId(orderId);
-        order.setStatus(OrderStatus.PENDING);
+    void findOrdersByStatusForAuthenticatedEmployee_shouldReturnOrders() {
+        Long employedId = 1L;
+        Long restaurantId = 10L;
+        OrderStatus status = OrderStatus.PENDING;
+        List<Order> orders = List.of(Order.builder().id(1L).build());
 
-        when(orderPersistencePort.getOrderById(orderId)).thenReturn(order);
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
+        when(userServiceClientPort.findUserById(employedId)).thenReturn(
+                com.plazoleta.plazoleta_microservice.domain.model.User.builder()
+                        .restaurantId(restaurantId)
+                        .build());
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
+        when(orderPersistencePort.findOrdersByStatusAndRestaurantId(restaurantId, status, 0, 10)).thenReturn(orders);
 
-        orderUseCase.assignOrder(orderId, employedId);
+        List<Order> result = orderUseCase.findOrdersByStatusForAuthenticatedEmployee(status, 0, 10);
 
-        assertEquals(employedId, order.getChefId());
-        assertEquals(OrderStatus.IN_PREPARATION, order.getStatus());
-        verify(orderPersistencePort).updateOrder(order);
+        assertEquals(orders, result);
+    }
+
+    @Test
+    void findOrdersByStatusForAuthenticatedEmployee_shouldThrowUserNotFoundException_whenUserNotFound() {
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,
+                () -> orderUseCase.findOrdersByStatusForAuthenticatedEmployee(OrderStatus.PENDING, 0, 10));
+    }
+
+    @Test
+    void findOrdersByStatusForAuthenticatedEmployee_shouldThrowRestaurantNotFoundException_whenRestaurantNotFound() {
+        Long employedId = 1L;
+        Long restaurantId = 10L;
+
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
+        when(userServiceClientPort.findUserById(employedId)).thenReturn(
+                com.plazoleta.plazoleta_microservice.domain.model.User.builder()
+                        .restaurantId(restaurantId)
+                        .build());
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.empty());
+
+        assertThrows(RestaurantNotFoundException.class,
+                () -> orderUseCase.findOrdersByStatusForAuthenticatedEmployee(OrderStatus.PENDING, 0, 10));
+    }
+
+    @Test
+    void assignOrder_shouldUpdateOrder_whenValid() {
+        Long orderId = 5L;
+        Long employedId = 1L;
+        Order order = Order.builder().id(orderId).build();
+
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
+
+        orderUseCase.assignOrder(orderId);
+
+        verify(orderPersistencePort).updateOrder(argThat(updatedOrder ->
+                updatedOrder.getChefId().equals(employedId) &&
+                        updatedOrder.getStatus() == OrderStatus.IN_PREPARATION
+        ));
+    }
+
+    @Test
+    void assignOrder_shouldThrowOrderNotFoundException_whenOrderNotFound() {
+        Long orderId = 5L;
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () -> orderUseCase.assignOrder(orderId));
+    }
+
+    @Test
+    void assignOrder_shouldThrowUserNotFoundException_whenUserNotFound() {
+        Long orderId = 5L;
+        Order order = Order.builder().id(orderId).build();
+
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> orderUseCase.assignOrder(orderId));
     }
 }

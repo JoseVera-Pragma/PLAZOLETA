@@ -1,101 +1,93 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-import com.plazoleta.plazoleta_microservice.domain.validator.DishValidator;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = "spring.profiles.active=test")
+
 class DishTest {
 
-    private Category category;
+    @Test
+    void testBuilderAndGetters() {
+        Category category = new Category(1L, "CategoryName", "CategoryDescription");
 
-    @BeforeEach
-    void setup() {
-        category = new Category(1L, "Postres", "Dulces deliciosos");
+        Dish dish = Dish.builder()
+                .id(10L)
+                .name("Pizza")
+                .price(12.5)
+                .description("Delicious pizza")
+                .imageUrl("http://image.url/pizza.jpg")
+                .category(category)
+                .active(false)
+                .restaurantId(5L)
+                .build();
+
+        assertEquals(10L, dish.getId());
+        assertEquals("Pizza", dish.getName());
+        assertEquals(12.5, dish.getPrice());
+        assertEquals("Delicious pizza", dish.getDescription());
+        assertEquals("http://image.url/pizza.jpg", dish.getImageUrl());
+        assertEquals(category, dish.getCategory());
+        assertFalse(dish.isActive());
+        assertEquals(5L, dish.getRestaurantId());
     }
 
     @Test
-    void testBuildValidDish() {
-        try (MockedStatic<DishValidator> validatorMock = Mockito.mockStatic(DishValidator.class)) {
-            validatorMock.when(() -> DishValidator.validate(any(), any(), any(), any(), any(), any())).thenCallRealMethod();;
+    void testActivate() {
+        Dish dish = Dish.builder()
+                .active(false)
+                .build();
 
-            Dish dish = Dish.builder()
-                    .id(10L)
-                    .name("Tarta de chocolate")
-                    .price(15.5)
-                    .description("Deliciosa tarta")
-                    .imageUrl("http://image.url/tarta.jpg")
-                    .category(category)
-                    .restaurantId(100L)
-                    .active(false)
-                    .build();
+        Dish activated = dish.activate();
 
-            assertEquals(10L, dish.getId());
-            assertEquals("Tarta de chocolate", dish.getName());
-            assertEquals(15.5, dish.getPrice());
-            assertEquals("Deliciosa tarta", dish.getDescription());
-            assertEquals("http://image.url/tarta.jpg", dish.getImageUrl());
-            assertEquals(category, dish.getCategory());
-            assertEquals(100L, dish.getRestaurantId());
-            assertFalse(dish.isActive());
-        }
+        assertTrue(activated.isActive());
+
+        Dish alreadyActive = activated.activate();
+        assertSame(activated, alreadyActive);
     }
 
     @Test
-    void testBuildInvalidDishThrowsException() {
-        try (MockedStatic<DishValidator> validatorMock = Mockito.mockStatic(DishValidator.class)) {
-            validatorMock.when(() -> DishValidator.validate(any(), any(), any(), any(), any(), any()))
-                    .thenThrow(new IllegalArgumentException("Datos inválidos"));
+    void testDeactivate() {
+        Dish dish = Dish.builder()
+                .active(true)
+                .build();
 
-            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
-                Dish.builder()
-                        .name(null)
-                        .price(-10.0)
-                        .description("")
-                        .imageUrl(null)
-                        .category(null)
-                        .restaurantId(null)
-                        .build();
-            });
+        Dish deactivated = dish.deactivate();
 
-            assertEquals("Datos inválidos", ex.getMessage());
-        }
+        assertFalse(deactivated.isActive());
+
+        Dish alreadyInactive = deactivated.deactivate();
+        assertSame(deactivated, alreadyInactive);
     }
 
     @Test
-    void testActivateDeactiveToggle() {
-        try (MockedStatic<DishValidator> validatorMock = Mockito.mockStatic(DishValidator.class)) {
-            validatorMock.when(() -> DishValidator.validate(any(), any(), any(), any(), any(), any())).thenCallRealMethod();
+    void testWithCategory() {
+        Category oldCategory = new Category(1L, "Old", "Old desc");
+        Category newCategory = new Category(2L, "New", "New desc");
 
-            Dish dish = Dish.builder()
-                    .name("Pizza")
-                    .price(20.0)
-                    .description("Pizza grande")
-                    .imageUrl("url")
-                    .category(category)
-                    .restaurantId(1L)
-                    .active(false)
-                    .build();
+        Dish dish = Dish.builder()
+                .category(oldCategory)
+                .build();
 
-            Dish activatedDish = dish.activate();
-            assertTrue(activatedDish.isActive());
-            assertEquals(dish.getId(), activatedDish.getId());
-            assertEquals(dish.getName(), activatedDish.getName());
+        Dish updatedDish = dish.withCategory(newCategory);
 
-            Dish sameActivated = activatedDish.activate();
-            assertSame(activatedDish, sameActivated);
+        assertEquals(newCategory, updatedDish.getCategory());
+        assertEquals(dish.getId(), updatedDish.getId());
+        assertEquals(dish.getName(), updatedDish.getName());
+    }
 
-            Dish deactivatedDish = activatedDish.deactivate();
-            assertFalse(deactivatedDish.isActive());
+    @Test
+    void testWithPriceAndDescription() {
+        Dish dish = Dish.builder()
+                .price(10.0)
+                .description("Old desc")
+                .build();
 
-            Dish sameDeactivated = deactivatedDish.deactivate();
-            assertSame(deactivatedDish, sameDeactivated);
-        }
+        Dish updatedDish = dish.withPriceAndDescription(15.0, "New desc");
+
+        assertEquals(15.0, updatedDish.getPrice());
+        assertEquals("New desc", updatedDish.getDescription());
+        assertEquals(dish.getId(), updatedDish.getId());
+        assertEquals(dish.getName(), updatedDish.getName());
     }
 }
