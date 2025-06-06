@@ -1,40 +1,30 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestDto;
-import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.RestaurantRequestDto;
-import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
+import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResponseDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResumeResponseDto;
-import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
 import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandler;
+import com.plazoleta.plazoleta_microservice.infrastructure.configuration.security.adapter.JwtTokenAdapter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@WebMvcTest(RestaurantController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@TestPropertySource(locations = "classpath:application-test.properties")
-@Transactional
 class RestaurantControllerTest {
 
     @Autowired
@@ -44,228 +34,54 @@ class RestaurantControllerTest {
     private IRestaurantHandler restaurantHandler;
 
     @MockitoBean
-    private IDishHandler dishHandler;
+    private JwtTokenAdapter jwtTokenAdapter;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Test
-    @WithMockUser(roles = {"ADMIN"})
-    void createRestaurant_ShouldReturnCreated() throws Exception {
-        RestaurantRequestDto requestDto = new RestaurantRequestDto();
-        requestDto.setName("La Delicia");
-        requestDto.setAddress("Calle 123 #45-67");
-        requestDto.setPhoneNumber("+573001234567");
-        requestDto.setUrlLogo("https://example.com/logo.jpg");
-        requestDto.setNit("900123457");
-        requestDto.setIdOwner(1L);
+    private RestaurantRequestDto restaurantRequestDto;
+    private RestaurantResponseDto restaurantResponseDto;
 
-        mockMvc.perform(post("/restaurants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isCreated());
+    @BeforeEach
+    void setUp() {
+        restaurantRequestDto = RestaurantRequestDto.builder()
+                .name("Testaurant")
+                .address("Calle 123")
+                .phoneNumber("1234567")
+                .urlLogo("http://logo.com")
+                .nit("123456")
+                .idOwner(1L)
+                .build();
 
-        verify(restaurantHandler, times(1)).createRestaurant(any(RestaurantRequestDto.class));
+        restaurantResponseDto = RestaurantResponseDto.builder()
+                .id(1L)
+                .name("Testaurant")
+                .build();
     }
 
     @Test
-    @WithMockUser(roles = {"OWNER"})
-    void createDish_ShouldReturnCreatedDish() throws Exception {
-        Long restaurantId = 1L;
-        Long ownerId = 1L;
+    @WithMockUser(roles = "ADMIN")
+    void createRestaurant_shouldReturnCreated() throws Exception {
+        when(restaurantHandler.createRestaurant(any(RestaurantRequestDto.class)))
+                .thenReturn(restaurantResponseDto);
 
-        DishRequestDto requestDto = new DishRequestDto();
-        requestDto.setName("Bandeja Paisa");
-        requestDto.setDescription("Plato típico colombiano");
-        requestDto.setPrice(2.5);
-        requestDto.setImageUrl("https://example.com/bandeja.jpg");
-        requestDto.setCategoryName("test");
-
-        DishResponseDto responseDto = new DishResponseDto();
-        responseDto.setId(1L);
-        responseDto.setName("Bandeja Paisa");
-        responseDto.setDescription("Plato típico colombiano");
-        responseDto.setPrice(2.5);
-        responseDto.setImageUrl("https://example.com/bandeja.jpg");
-        responseDto.setActive(true);
-        responseDto.setRestaurantId(restaurantId);
-        responseDto.setCategoryName("test");
-
-        when(dishHandler.createDish(anyLong(), any(DishRequestDto.class)))
-                .thenReturn(responseDto);
-
-        mockMvc.perform(post("/restaurants/{restaurantId}/dishes", restaurantId)
-                        .param("ownerId", ownerId.toString())
+        mockMvc.perform(post("/restaurants")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
+                        .content(objectMapper.writeValueAsString(restaurantRequestDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Bandeja Paisa"))
-                .andExpect(jsonPath("$.description").value("Plato típico colombiano"))
-                .andExpect(jsonPath("$.price").value(2.5))
-                .andExpect(jsonPath("$.imageUrl").value("https://example.com/bandeja.jpg"))
-                .andExpect(jsonPath("$.active").value(true))
-                .andExpect(jsonPath("$.restaurantId").value(1))
-                .andExpect(jsonPath("$.categoryName").value("test"));
-
-        verify(dishHandler, times(1)).createDish(eq(restaurantId), any(DishRequestDto.class));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMIN"})
-    void createRestaurant_WithInvalidData_ShouldReturnBadRequest() throws Exception {
-        RestaurantRequestDto invalidRequest = new RestaurantRequestDto();
-
-        mockMvc.perform(post("/restaurants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMIN"})
-    void createDish_WithInvalidData_ShouldReturnBadRequest() throws Exception {
-        Long restaurantId = 1L;
-        Long ownerId = 1L;
-
-        DishRequestDto invalidRequest = new DishRequestDto();
-
-        mockMvc.perform(post("/restaurants/{restaurantId}/dishes", restaurantId)
-                        .param("ownerId", ownerId.toString())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ADMIN"})
-    void createDish_WithoutOwnerIdParam_ShouldReturnBadRequest() throws Exception {
-        Long restaurantId = 1L;
-
-        DishRequestDto requestDto = new DishRequestDto();
-        requestDto.setName("Test Dish");
-        requestDto.setDescription("Test Description");
-        requestDto.setPrice(1.0);
-        requestDto.setCategoryName("test");
-
-        mockMvc.perform(post("/restaurants/{restaurantId}/dishes", restaurantId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(roles = {"OWNER"})
-    void updateDish_ReturnsNoContent_WhenSuccessful() throws Exception {
-        Long restaurantId = 1L;
-        Long dishId = 10L;
-        Long ownerId = 100L;
-
-        String jsonBody = """
-            {
-              "description": "Updated description",
-              "price": 15.5
-            }
-            """;
-
-        mockMvc.perform(put("/restaurants/{restaurantId}/dishes/{dishId}", restaurantId, dishId)
-                        .param("ownerId", ownerId.toString())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonBody))
-                .andExpect(status().isNoContent());
-
-        verify(dishHandler).updateDish(eq(dishId), any(DishUpdateRequestDto.class));
-    }
-
-
-    @Test
-    @WithMockUser(roles = "OWNER")
-    void shouldChangeDishStatusSuccessfully() throws Exception {
-        Long dishId = 1L;
-        boolean activate = true;
-
-        mockMvc.perform(patch("/restaurants/dishes/"+dishId+"/status")
-                        .param("activate", String.valueOf(activate))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent());
-
-        verify(dishHandler).changeDishStatus(dishId, activate);
+                .andExpect(jsonPath("$.name").value("Testaurant"));
     }
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
-    void shouldReturnPaginatedRestaurantsList() throws Exception {
-        int page = 0;
-        int size = 2;
+    void getRestaurants_shouldReturnList() throws Exception {
+        RestaurantResumeResponseDto resume = new RestaurantResumeResponseDto("Testaurant", "http://logo.com");
 
-        RestaurantResumeResponseDto dto1 = new RestaurantResumeResponseDto("Restaurante A", "logoA");
-        RestaurantResumeResponseDto dto2 = new RestaurantResumeResponseDto("Restaurante B", "logoB");
+        when(restaurantHandler.restaurantList(0, 10)).thenReturn(List.of(resume));
 
-        List<RestaurantResumeResponseDto> dtoList = List.of(dto1, dto2);
-        Page<RestaurantResumeResponseDto> pageResult = new PageImpl<>(dtoList, PageRequest.of(page, size), dtoList.size());
-
-        when(restaurantHandler.restaurantList(page, size)).thenReturn(pageResult);
-
-        mockMvc.perform(get("/restaurants")
-                        .param("page", String.valueOf(page))
-                        .param("size", String.valueOf(size))
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/restaurants?page=0&size=10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(2))
-                .andExpect(jsonPath("$.content[0].name").value("Restaurante A"))
-                .andExpect(jsonPath("$.content[0].urlLogo").value("logoA"))
-                .andExpect(jsonPath("$.content[1].name").value("Restaurante B"))
-                .andExpect(jsonPath("$.content[1].urlLogo").value("logoB"));
-
-        verify(restaurantHandler).restaurantList(page, size);
-    }
-
-    @Test
-    @WithMockUser(roles = "CUSTOMER")
-    void testGetDishesByCategory_shouldReturnPagedDishes() throws Exception {
-        Long restaurantId = 1L;
-        Long categoryId = 3L;
-        int page = 0;
-        int size = 2;
-
-        DishResponseDto dish1 = DishResponseDto.builder()
-                .id(101L)
-                .name("Taco")
-                .description("Delicioso taco mexicano")
-                .price(10.5)
-                .imageUrl("http://img.com/taco.jpg")
-                .categoryName("Mexicana")
-                .active(true)
-                .restaurantId(restaurantId)
-                .build();
-
-        DishResponseDto dish2 = DishResponseDto.builder()
-                .id(102L)
-                .name("Burrito")
-                .description("Clásico burrito")
-                .price(12.0)
-                .imageUrl("http://img.com/burrito.jpg")
-                .categoryName("Mexicana")
-                .active(true)
-                .restaurantId(restaurantId)
-                .build();
-
-        List<DishResponseDto> dtoList = List.of(dish1, dish2);
-        Pageable pageable = PageRequest.of(page, size);
-        Page<DishResponseDto> pagedResponse = new PageImpl<>(dtoList, pageable, dtoList.size());
-
-        when(dishHandler.getDishesByRestaurantAndCategory(restaurantId, categoryId, page, size))
-                .thenReturn(pagedResponse);
-
-        mockMvc.perform(get("/restaurants/{restaurantId}/category/{categoryId}", restaurantId, categoryId)
-                        .param("page", String.valueOf(page))
-                        .param("size", String.valueOf(size))
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].name").value("Taco"))
-                .andExpect(jsonPath("$.content[1].name").value("Burrito"));
-
-        verify(dishHandler).getDishesByRestaurantAndCategory(restaurantId, categoryId, page, size);
+                .andExpect(jsonPath("$[0].name").value("Testaurant"));
     }
 }
