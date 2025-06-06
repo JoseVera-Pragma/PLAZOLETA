@@ -1,15 +1,16 @@
 package com.plazoleta.plazoleta_microservice.application.mapper;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
-import com.plazoleta.plazoleta_microservice.application.dto.request.DishOrderRequestDto;
-import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
-import com.plazoleta.plazoleta_microservice.domain.model.OrderDish;
-import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
+import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-import java.util.List;
-
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        unmappedSourcePolicy = ReportingPolicy.IGNORE,
+        uses = { IOrderDishRequestMapper.class }
+)
 public interface IOrderRequestMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customerId", ignore = true)

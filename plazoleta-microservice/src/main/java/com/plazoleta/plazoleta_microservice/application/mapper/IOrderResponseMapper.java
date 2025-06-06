@@ -14,6 +14,7 @@ import java.util.List;
 public interface IOrderResponseMapper {
 
     @Mapping(target = "statusDescription", ignore = true)
+    @Mapping(target = "restaurantId", source = "restaurant.id")
     OrderResponseDto toResponseDto(Order order);
 
     List<OrderResponseDto> toResponsesDto(List<Order> orders);
