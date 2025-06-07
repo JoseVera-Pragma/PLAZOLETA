@@ -43,7 +43,7 @@ public class JwtRequestFilter implements Filter {
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 principal,
-                                null,
+                                token,
                                 Collections.singletonList(new SimpleGrantedAuthority(role))
                         );
 

@@ -111,8 +111,9 @@ public class BeanConfiguration {
 
     @Bean
     public IOrderServicePort orderServicePort(IOrderPersistencePort orderPersistencePort, IDishPersistencePort dishPersistencePort,
-                                              IRestaurantPersistencePort restaurantPersistencePort, IAuthenticatedUserPort authenticatedUserPort, IUserServiceClientPort userServiceClientPort) {
-        return new OrderUseCase(orderPersistencePort, dishPersistencePort, restaurantPersistencePort, authenticatedUserPort, userServiceClientPort);
+                                              IRestaurantPersistencePort restaurantPersistencePort, IAuthenticatedUserPort authenticatedUserPort,
+                                              IUserServiceClientPort userServiceClientPort, ISendSmsPort sendSmsPort) {
+        return new OrderUseCase(orderPersistencePort, dishPersistencePort, restaurantPersistencePort, authenticatedUserPort, userServiceClientPort, sendSmsPort);
     }
 
     @Bean
