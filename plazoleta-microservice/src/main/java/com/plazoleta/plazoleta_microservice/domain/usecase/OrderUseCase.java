@@ -2,6 +2,7 @@ package com.plazoleta.plazoleta_microservice.domain.usecase;
 
 import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.*;
@@ -11,6 +12,7 @@ import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFound
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class OrderUseCase implements IOrderServicePort {
 
@@ -19,17 +21,19 @@ public class OrderUseCase implements IOrderServicePort {
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final IAuthenticatedUserPort authenticatedUserPort;
     private final IUserServiceClientPort userServiceClientPort;
+    private final ISendSmsPort sendSmsPort;
 
     public OrderUseCase(IOrderPersistencePort orderPersistencePort,
                         IDishPersistencePort dishPersistencePort,
                         IRestaurantPersistencePort restaurantPersistencePort,
                         IAuthenticatedUserPort authenticatedUserPort,
-                        IUserServiceClientPort userServiceClientPort) {
+                        IUserServiceClientPort userServiceClientPort, ISendSmsPort sendSmsPort) {
         this.orderPersistencePort = orderPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.authenticatedUserPort = authenticatedUserPort;
         this.userServiceClientPort = userServiceClientPort;
+        this.sendSmsPort = sendSmsPort;
     }
 
     @Override
@@ -118,5 +122,32 @@ public class OrderUseCase implements IOrderServicePort {
         }
 
         return enrichedOrderDishes;
+    }
+
+    @Override
+    public void markOrderAsReady(Long orderId) {
+        Order order = orderPersistencePort.findOrderById(orderId)
+                .orElseThrow(() ->
+                        new OrderNotFoundException("Order with ID " + orderId + " not found.")
+                );
+
+        if (!order.getStatus().equals(OrderStatus.IN_PREPARATION)) {
+            throw new InvalidOrderStatusException("Order is not preparing");
+        }
+
+        String pin = generatePin();
+        Order updatedOrder = order.withSecurityPin(pin).withStatus(OrderStatus.READY);
+
+        orderPersistencePort.updateOrder(updatedOrder);
+
+        String customerPhoneNumber = userServiceClientPort.findUserById(order.getCustomerId()).getPhoneNumber();
+        String message = "Your order is ready. Use this PIN to claim it: " + pin;
+        sendSmsPort.sendSms(customerPhoneNumber, message);
+    }
+
+    private String generatePin() {
+        Random random = new Random();
+        int pin = 1000 + random.nextInt(9000);
+        return String.valueOf(pin);
     }
 }

@@ -16,4 +16,6 @@ public interface IOrderServicePort {
     List<Order> findOrdersByStatusForAuthenticatedEmployee(OrderStatus status, int pageIndex, int elementsPerPage);
 
     void assignOrder(Long orderId);
+
+    void markOrderAsReady(Long orderId);
 }
