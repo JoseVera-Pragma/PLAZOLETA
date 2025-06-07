@@ -12,4 +12,6 @@ public interface IOrderHandler {
     List<OrderResponseDto> findOrdersByStatusForAuthenticatedEmployee(OrderStatus status, int pageIndex, int elementsPerPage);
 
     void assignOrder(Long orderId);
+
+    void markOrderAsReady(Long orderId);
 }

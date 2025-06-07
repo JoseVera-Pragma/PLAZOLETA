@@ -15,5 +15,6 @@ public class OrderResponseDto {
     private String orderDate;
     private OrderStatus status;
     private String statusDescription;
+    private String securityPin;
     private Long restaurantId;
 }
