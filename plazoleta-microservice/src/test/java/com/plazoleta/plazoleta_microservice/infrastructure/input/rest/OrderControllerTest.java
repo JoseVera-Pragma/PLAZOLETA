@@ -56,7 +56,7 @@ class OrderControllerTest {
                 )
         );
 
-        orderResponseDto = new OrderResponseDto(1L, 1L, 1L, "2025", OrderStatus.PENDING, "Pendiente", 1L);
+        orderResponseDto = new OrderResponseDto(1L, 1L, 1L, "2025", OrderStatus.PENDING, "Pendiente", "1234",1L);
     }
 
     @Test
