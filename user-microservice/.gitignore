@@ -39,3 +39,5 @@ out/
 
 ## Tests ##
 htmlReport
+
+.env
