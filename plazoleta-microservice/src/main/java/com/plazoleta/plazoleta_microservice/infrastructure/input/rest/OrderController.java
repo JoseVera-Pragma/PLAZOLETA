@@ -84,4 +84,18 @@ public class OrderController {
         orderHandler.assignOrder(orderId);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(
+            summary = "Marcar pedido como listo",
+            description = "Marca el pedido como 'READY', genera un PIN de seguridad y envía un SMS al cliente notificando que su pedido está listo."
+    )
+    @PreAuthorize("hasRole('EMPLOYED')")
+    @PostMapping("/{orderId}/ready")
+    public ResponseEntity<Void> markOrderAsReady(
+            @Parameter(description = "ID del pedido a marcar como listo", example = "123")
+            @PathVariable Long orderId
+    ) {
+        orderHandler.markOrderAsReady(orderId);
+        return ResponseEntity.ok().build();
+    }
 }
