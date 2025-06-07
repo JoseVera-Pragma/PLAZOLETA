@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.usecase;
 
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.*;
@@ -8,6 +9,7 @@ import com.plazoleta.plazoleta_microservice.domain.spi.*;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -30,6 +32,8 @@ class OrderUseCaseTest {
     private IAuthenticatedUserPort authenticatedUserPort;
     @Mock
     private IUserServiceClientPort userServiceClientPort;
+    @Mock
+    private ISendSmsPort sendSmsPort;
 
     @InjectMocks
     private OrderUseCase orderUseCase;
@@ -259,5 +263,69 @@ class OrderUseCaseTest {
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> orderUseCase.assignOrder(orderId));
+    }
+
+    @Test
+    void markOrderAsReady_shouldGeneratePinUpdateOrderAndSendSms() {
+        Long orderId = 1L;
+        Long customerId = 100L;
+        String phone = "+123456789";
+
+        Order existingOrder = Order.builder()
+                .id(orderId)
+                .customerId(customerId)
+                .status(OrderStatus.IN_PREPARATION)
+                .securityPin(null)
+                .build();
+
+        User user = User.builder()
+                .phoneNumber(phone)
+                .build();
+
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(existingOrder));
+        when(userServiceClientPort.findUserById(customerId)).thenReturn(user);
+
+        orderUseCase.markOrderAsReady(orderId);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderPersistencePort).updateOrder(orderCaptor.capture());
+        Order updatedOrder = orderCaptor.getValue();
+
+        assertEquals(OrderStatus.READY, updatedOrder.getStatus());
+        assertNotNull(updatedOrder.getSecurityPin());
+        assertEquals(4, updatedOrder.getSecurityPin().length());
+
+        String expectedMessage = "Your order is ready. Use this PIN to claim it: " + updatedOrder.getSecurityPin();
+        verify(sendSmsPort).sendSms(eq(phone), eq(expectedMessage));
+    }
+
+    @Test
+    void markOrderAsReady_shouldThrowWhenOrderNotFound() {
+        Long orderId = 1L;
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () -> {
+            orderUseCase.markOrderAsReady(orderId);
+        });
+
+        verifyNoInteractions(sendSmsPort, userServiceClientPort);
+    }
+
+    @Test
+    void markOrderAsReady_shouldThrowWhenOrderNotInPreparation() {
+        Long orderId = 1L;
+        Order order = Order.builder()
+                .id(orderId)
+                .customerId(10L)
+                .status(OrderStatus.PENDING)
+                .securityPin(null)
+                .build();
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOrderStatusException.class, () -> {
+            orderUseCase.markOrderAsReady(orderId);
+        });
+
+        verifyNoInteractions(sendSmsPort, userServiceClientPort);
     }
 }
