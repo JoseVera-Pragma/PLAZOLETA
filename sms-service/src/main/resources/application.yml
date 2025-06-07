@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: sms-service
+    version: 1.0.0
+
+server:
+  port: 8083
+  servlet:
+    context-path: /api/v1
+
+jwt:
+  secret: REMOVED_JWT_SECRET
+
+twilio:
+  account:
+    sid: REMOVED_TWILIO_SID
+  auth:
+    token: REMOVED_TWILIO_TOKEN
+  phone:
+    number: "REMOVED_TWILIO_PHONE"
