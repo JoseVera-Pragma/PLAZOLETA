@@ -78,8 +78,8 @@ class OrderHandlerImplTest {
         );
 
         List<OrderResponseDto> responseDtos = List.of(
-                new OrderResponseDto(1L, 100L, 200L, "2024-01-01", status, "Pending", 10L),
-                new OrderResponseDto(2L, 101L, 201L, "2024-01-02", status, "Pending", 10L)
+                new OrderResponseDto(1L, 100L, 200L, "2024-01-01", status, "Pending", "1234", 10L),
+                new OrderResponseDto(2L, 101L, 201L, "2024-01-02", status, "Pending", "1234",10L)
         );
 
         when(orderServicePort.findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage)).thenReturn(orders);
@@ -100,5 +100,14 @@ class OrderHandlerImplTest {
         orderHandler.assignOrder(orderId);
 
         verify(orderServicePort).assignOrder(orderId);
+    }
+
+    @Test
+    void testMarkOrderAsReady() {
+        Long orderId = 99L;
+
+        orderHandler.markOrderAsReady(orderId);
+
+        verify(orderServicePort).markOrderAsReady(orderId);
     }
 }
