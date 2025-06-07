@@ -26,6 +26,10 @@ logging:
     feign.Client: DEBUG
     feign.Logger: DEBUG
 
+sms:
+  service:
+    url: localhost:8083/api/v1
+
 user:
   service:
     url: localhost:8081/api/v1
