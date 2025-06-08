@@ -1,5 +1,6 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.exceptionhandler;
 
+import com.plazoleta.plazoleta_microservice.domain.exception.InvalidSecurityPinException;
 import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryAlreadyExistsException;
 import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryInUseException;
 import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryNotFoundException;
@@ -16,6 +17,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
@@ -50,6 +53,11 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler({InvalidSecurityPinException.class})
+    public ResponseEntity<ApiError> handleInvalidSecurityPinException(RuntimeException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler({UnauthorizedOwnerException.class})
     public ResponseEntity<ApiError> handleUnauthorizedDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
@@ -68,6 +76,11 @@ public class ControllerAdvisor {
     })
     public ResponseEntity<ApiError> handleNotFoundDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST,  "Request body is missing or malformed.", request.getRequestURI());
     }
 
     @ExceptionHandler(CustomerHasActiveOrderException.class)
