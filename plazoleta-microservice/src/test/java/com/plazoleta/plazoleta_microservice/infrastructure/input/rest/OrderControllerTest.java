@@ -117,4 +117,17 @@ class OrderControllerTest {
 
         verify(orderHandler).markOrderAsDelivered(orderId, requestDto);
     }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void markOrderAsCanceled_ShouldReturnOk() throws Exception {
+        Long orderId = 1L;
+        DeliverOrderRequestDto requestDto = new DeliverOrderRequestDto("1234");
+
+        mockMvc.perform(patch("/orders/{orderId}/delivered", orderId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(orderHandler).markOrderAsCanceled(orderId);
+    }
 }

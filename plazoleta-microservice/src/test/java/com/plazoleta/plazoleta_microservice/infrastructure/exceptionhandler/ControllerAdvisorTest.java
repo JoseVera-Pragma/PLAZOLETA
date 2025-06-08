@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.exceptionhandler;
 
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.DuplicateNitException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidPhoneNumberException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
@@ -17,6 +18,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -85,6 +87,24 @@ class ControllerAdvisorTest {
         ResponseEntity<ApiError> response = advisor.handleMissingParam(ex, request);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertTrue(response.getBody().getMessage().contains("Missing parameter: param"));
+    }
+
+    @Test
+    void testHandleHttpMessageNotReadable() {
+        HttpMessageNotReadableException ex = new HttpMessageNotReadableException("Malformed JSON request");
+        ResponseEntity<ApiError> response = advisor.handleHttpMessageNotReadable(ex, request);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Request body is missing or malformed.", response.getBody().getMessage());
+    }
+
+    @Test
+    void testHandleInvalidOrderStatusException() {
+        InvalidOrderStatusException ex = new InvalidOrderStatusException("Cannot cancel an already delivered order");
+        ResponseEntity<ApiError> response = advisor.handleInvalidOrderStatusException(ex, request);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("Cannot cancel an already delivered order", response.getBody().getMessage());
     }
 
     @Test
