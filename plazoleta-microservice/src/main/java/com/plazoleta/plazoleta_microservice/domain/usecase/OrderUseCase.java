@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.usecase;
 
 import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
+import com.plazoleta.plazoleta_microservice.domain.exception.InvalidSecurityPinException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
@@ -143,6 +144,26 @@ public class OrderUseCase implements IOrderServicePort {
         String customerPhoneNumber = userServiceClientPort.findUserById(order.getCustomerId()).getPhoneNumber();
         String message = "Your order is ready. Use this PIN to claim it: " + pin;
         sendSmsPort.sendSms(customerPhoneNumber, message);
+    }
+
+    @Override
+    public void markOrderAsDelivered(Long orderId, String securityPin) {
+        Order order = orderPersistencePort.findOrderById(orderId)
+                .orElseThrow(() ->
+                        new OrderNotFoundException("Order with ID " + orderId + " not found.")
+                );
+
+        if (!order.getStatus().equals(OrderStatus.READY)) {
+            throw new InvalidOrderStatusException("Order is not ready");
+        }
+
+        if (!order.getSecurityPin().equals(securityPin)) {
+            throw new InvalidSecurityPinException("Security pin is not valid");
+        }
+
+        Order updatedOrder = order.withStatus(OrderStatus.DELIVERED);
+
+        orderPersistencePort.updateOrder(updatedOrder);
     }
 
     private String generatePin() {
