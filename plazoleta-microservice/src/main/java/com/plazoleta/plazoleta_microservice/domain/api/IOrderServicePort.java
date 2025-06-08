@@ -20,4 +20,6 @@ public interface IOrderServicePort {
     void markOrderAsReady(Long orderId);
 
     void markOrderAsDelivered(Long orderId, String securityPin);
+
+    void markOrderAsCanceled(Long orderId);
 }
