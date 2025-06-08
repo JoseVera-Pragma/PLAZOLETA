@@ -3,6 +3,8 @@ package com.plazoleta.plazoleta_microservice.domain.usecase;
 import com.plazoleta.plazoleta_microservice.domain.exception.InvalidSecurityPinException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderAccessDeniedException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderInProcessException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.*;
@@ -69,15 +71,14 @@ class OrderUseCaseTest {
     }
 
     @Test
-    void createOrder_shouldThrowIllegalStateException_whenCustomerHasOrdersInProcess() {
+    void createOrder_shouldOrderInProcessException_whenCustomerHasOrdersInProcess() {
         Long customerId = 1L;
         Order order = Order.builder().customerId(customerId).build();
 
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
         when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(true);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> orderUseCase.createOrder(order));
-        assertEquals("Customer have order in process.", ex.getMessage());
+        assertThrows(OrderInProcessException.class, () -> orderUseCase.createOrder(order));
     }
 
     @Test
@@ -349,7 +350,8 @@ class OrderUseCaseTest {
         Order updated = orderCaptor.getValue();
         assertEquals(OrderStatus.DELIVERED, updated.getStatus());
         assertEquals(order.getId(), updated.getId());
-        assertEquals(order.getSecurityPin(), updated.getSecurityPin());    }
+        assertEquals(order.getSecurityPin(), updated.getSecurityPin());
+    }
 
     @Test
     void markOrderAsDelivered_OrderNotFound_ThrowsException() {
@@ -388,5 +390,82 @@ class OrderUseCaseTest {
 
         assertThrows(InvalidSecurityPinException.class, () ->
                 orderUseCase.markOrderAsDelivered(1L, "0000"));
+    }
+
+    @Test
+    void markOrderAsCanceled_Successful() {
+        Order order = Order.builder()
+                .id(1L)
+                .customerId(1L)
+                .status(OrderStatus.PENDING)
+                .build();
+
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.of(order));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(1L));
+
+        orderUseCase.markOrderAsCanceled(1L);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderPersistencePort).updateOrder(orderCaptor.capture());
+
+        Order updated = orderCaptor.getValue();
+        assertEquals(OrderStatus.CANCELLED, updated.getStatus());
+        assertEquals(order.getId(), updated.getId());
+    }
+
+    @Test
+    void markOrderAsCanceled_OrderNotFound_ThrowsException() {
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () ->
+                orderUseCase.markOrderAsCanceled(1L));
+    }
+
+    @Test
+    void markOrderAsCanceled_InvalidOrderStatus_ThrowsException() {
+        Order order = Order.builder()
+                .id(1L)
+                .status(OrderStatus.READY)
+                .build();
+
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOrderStatusException.class, () ->
+                orderUseCase.markOrderAsCanceled(1L));
+    }
+
+    @Test
+    void markOrderAsCanceled_UserNotFound_ThrowsException() {
+        Order order = Order.builder()
+                .id(1L)
+                .status(OrderStatus.PENDING)
+                .customerId(1L)
+                .build();
+
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.of(order));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () ->
+                orderUseCase.markOrderAsCanceled(1L));
+    }
+
+    @Test
+    void markOrderAsCanceled_OrderAccessDenied_ThrowsException() {
+        Order order = Order.builder()
+                .id(1L)
+                .status(OrderStatus.PENDING)
+                .customerId(1L)
+                .build();
+
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.of(order));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(2L));
+
+        assertThrows(OrderAccessDeniedException.class, () ->
+                orderUseCase.markOrderAsCanceled(1L));
     }
 }
