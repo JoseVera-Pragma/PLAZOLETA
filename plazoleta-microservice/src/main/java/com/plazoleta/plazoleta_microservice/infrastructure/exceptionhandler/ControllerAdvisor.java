@@ -7,9 +7,11 @@ import com.plazoleta.plazoleta_microservice.domain.exception.category.CategoryNo
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDataException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderAccessDeniedException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.*;
 import com.plazoleta.plazoleta_microservice.infrastructure.exception.CustomerHasActiveOrderException;
-import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 import com.plazoleta.plazoleta_microservice.infrastructure.exception.UserServiceUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -27,7 +29,6 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
@@ -58,14 +59,19 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler({ OrderAccessDeniedException.class })
+    public ResponseEntity<ApiError> handleForbiddenExceptions(RuntimeException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler({UnauthorizedOwnerException.class})
     public ResponseEntity<ApiError> handleUnauthorizedDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex,HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST,"Missing parameter: " + ex.getParameterName(),request.getRequestURI());
+    public ResponseEntity<ApiError> handleMissingParam(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Missing parameter: " + ex.getParameterName(), request.getRequestURI());
     }
 
     @ExceptionHandler({UserNotFoundException.class,
@@ -80,7 +86,7 @@ public class ControllerAdvisor {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.BAD_REQUEST,  "Request body is missing or malformed.", request.getRequestURI());
+        return buildResponse(HttpStatus.BAD_REQUEST, "Request body is missing or malformed.", request.getRequestURI());
     }
 
     @ExceptionHandler(CustomerHasActiveOrderException.class)
@@ -90,6 +96,11 @@ public class ControllerAdvisor {
 
     @ExceptionHandler({DuplicateNitException.class, CategoryAlreadyExistsException.class, CategoryInUseException.class, DataAccessException.class})
     public ResponseEntity<ApiError> handleDuplicateDomainExceptions(RuntimeException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler({InvalidOrderStatusException.class})
+    public ResponseEntity<ApiError> handleInvalidOrderStatusException(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 

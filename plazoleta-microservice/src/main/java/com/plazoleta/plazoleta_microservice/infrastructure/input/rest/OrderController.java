@@ -125,4 +125,24 @@ public class OrderController {
         orderHandler.markOrderAsDelivered(orderId, requestDto);
         return ResponseEntity.ok().build();
     }
+
+    @Operation(
+            summary = "Cancelar un pedido",
+            description = "Permite a un cliente cancelar su propio pedido. Solo se puede cancelar si el pedido aún está en proceso y pertenece al cliente autenticado."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedido cancelado correctamente"),
+            @ApiResponse(responseCode = "403", description = "El pedido no pertenece al cliente autenticado"),
+            @ApiResponse(responseCode = "404", description = "Pedido no encontrado"),
+            @ApiResponse(responseCode = "409", description = "El estado del pedido no permite su cancelación")
+    })
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @PatchMapping("/{orderId}/canceled")
+    public ResponseEntity<Void> markOrderAsCanceled(
+            @Parameter(description = "ID del pedido a marcar como cancelado", example = "123")
+            @PathVariable Long orderId
+    ) {
+        orderHandler.markOrderAsCanceled(orderId);
+        return ResponseEntity.ok().build();
+    }
 }
