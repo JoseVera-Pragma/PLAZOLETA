@@ -1,5 +1,6 @@
 package com.plazoleta.plazoleta_microservice.domain.usecase;
 
+import com.plazoleta.plazoleta_microservice.domain.exception.InvalidSecurityPinException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
@@ -327,5 +328,65 @@ class OrderUseCaseTest {
         });
 
         verifyNoInteractions(sendSmsPort, userServiceClientPort);
+    }
+
+    @Test
+    void markOrderAsDelivered_Successful() {
+        Order order = Order.builder()
+                .id(1L)
+                .status(OrderStatus.READY)
+                .securityPin("1234")
+                .build();
+
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.of(order));
+
+        orderUseCase.markOrderAsDelivered(1L, "1234");
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderPersistencePort).updateOrder(orderCaptor.capture());
+
+        Order updated = orderCaptor.getValue();
+        assertEquals(OrderStatus.DELIVERED, updated.getStatus());
+        assertEquals(order.getId(), updated.getId());
+        assertEquals(order.getSecurityPin(), updated.getSecurityPin());    }
+
+    @Test
+    void markOrderAsDelivered_OrderNotFound_ThrowsException() {
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(OrderNotFoundException.class, () ->
+                orderUseCase.markOrderAsDelivered(1L, "1234"));
+    }
+
+    @Test
+    void markOrderAsDelivered_InvalidStatus_ThrowsException() {
+        Order order = Order.builder()
+                .id(1L)
+                .status(OrderStatus.IN_PREPARATION)
+                .securityPin("1234")
+                .build();
+
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.of(order));
+
+        assertThrows(InvalidOrderStatusException.class, () ->
+                orderUseCase.markOrderAsDelivered(1L, "1234"));
+    }
+
+    @Test
+    void markOrderAsDelivered_WrongPin_ThrowsException() {
+        Order order = Order.builder()
+                .id(1L)
+                .status(OrderStatus.READY)
+                .securityPin("1234")
+                .build();
+
+        when(orderPersistencePort.findOrderById(1L))
+                .thenReturn(Optional.of(order));
+
+        assertThrows(InvalidSecurityPinException.class, () ->
+                orderUseCase.markOrderAsDelivered(1L, "0000"));
     }
 }
