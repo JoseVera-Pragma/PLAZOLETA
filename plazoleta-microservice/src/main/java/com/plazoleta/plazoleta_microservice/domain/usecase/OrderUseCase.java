@@ -4,11 +4,13 @@ import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
 import com.plazoleta.plazoleta_microservice.domain.exception.InvalidSecurityPinException;
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.DishNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderAccessDeniedException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderInProcessException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.RestaurantNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.*;
 import com.plazoleta.plazoleta_microservice.domain.spi.*;
-import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,13 +47,13 @@ public class OrderUseCase implements IOrderServicePort {
                 );
 
         if (orderPersistencePort.customerHasOrdersInProcess(customerId)) {
-            throw new IllegalStateException("Customer have order in process.");
+            throw new OrderInProcessException("Customer have order in process.");
         }
 
         Restaurant restaurant = restaurantPersistencePort.findRestaurantById(order.getRestaurant().getId())
-                                .orElseThrow(()->
-                                        new RestaurantNotFoundException("Restaurant whit ID "+order.getRestaurant().getId()+" not found.")
-                                );
+                .orElseThrow(() ->
+                        new RestaurantNotFoundException("Restaurant whit ID " + order.getRestaurant().getId() + " not found.")
+                );
 
         List<OrderDish> orderDishes = validateAndEnrichOrderDishes(order.getDishes(), order.getRestaurant().getId());
 
@@ -82,7 +84,7 @@ public class OrderUseCase implements IOrderServicePort {
         Long employedId = authenticatedUserPort.getCurrentUserId().orElseThrow(
                 () -> new UserNotFoundException("User not found."));
 
-        Long associatedRestaurantId  = userServiceClientPort.findUserById(employedId).getRestaurantId();
+        Long associatedRestaurantId = userServiceClientPort.findUserById(employedId).getRestaurantId();
 
         restaurantPersistencePort.findRestaurantById(associatedRestaurantId)
                 .orElseThrow(() ->
@@ -109,7 +111,7 @@ public class OrderUseCase implements IOrderServicePort {
     private List<OrderDish> validateAndEnrichOrderDishes(List<OrderDish> orderDishes, Long restaurantId) {
         List<OrderDish> enrichedOrderDishes = new ArrayList<>();
 
-        for (OrderDish dish  : orderDishes) {
+        for (OrderDish dish : orderDishes) {
             Dish fullDish = dishPersistencePort.findDishById(dish.getDishId())
                     .orElseThrow(() ->
                             new DishNotFoundException("Dish with ID " + dish.getDishId() + " not found.")
@@ -162,6 +164,31 @@ public class OrderUseCase implements IOrderServicePort {
         }
 
         Order updatedOrder = order.withStatus(OrderStatus.DELIVERED);
+
+        orderPersistencePort.updateOrder(updatedOrder);
+    }
+
+    @Override
+    public void markOrderAsCanceled(Long orderId) {
+        Order order = orderPersistencePort.findOrderById(orderId)
+                .orElseThrow(() ->
+                        new OrderNotFoundException("Order with ID " + orderId + " not found.")
+                );
+
+        if (!order.getStatus().equals(OrderStatus.PENDING)) {
+            throw new InvalidOrderStatusException("We feel it, your order is already in preparation and cannot be canceled");
+        }
+
+        Long customerId = authenticatedUserPort.getCurrentUserId()
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found.")
+                );
+
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new OrderAccessDeniedException("You do not have permission to access this order.");
+        }
+
+        Order updatedOrder = order.withStatus(OrderStatus.CANCELLED);
 
         orderPersistencePort.updateOrder(updatedOrder);
     }
