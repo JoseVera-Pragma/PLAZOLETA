@@ -2,6 +2,7 @@ package com.plazoleta.plazoleta_microservice.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DeliverOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IOrderHandler;
@@ -90,5 +91,30 @@ class OrderControllerTest {
 
         mockMvc.perform(patch("/orders/assign/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void markOrderAsReady_ShouldReturnOk() throws Exception {
+        Long orderId = 1L;
+
+        mockMvc.perform(patch("/orders/{orderId}/ready", orderId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(orderHandler).markOrderAsReady(orderId);
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYED")
+    void markOrderAsDelivered_ShouldReturnOk() throws Exception {
+        Long orderId = 1L;
+        DeliverOrderRequestDto requestDto = new DeliverOrderRequestDto("1234");
+
+        mockMvc.perform(patch("/orders/{orderId}/delivered", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isOk());
+
+        verify(orderHandler).markOrderAsDelivered(orderId, requestDto);
     }
 }
