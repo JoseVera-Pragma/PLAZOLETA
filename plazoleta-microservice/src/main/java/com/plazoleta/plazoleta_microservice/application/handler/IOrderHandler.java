@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.application.handler;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DeliverOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 
@@ -14,4 +15,6 @@ public interface IOrderHandler {
     void assignOrder(Long orderId);
 
     void markOrderAsReady(Long orderId);
+
+    void markOrderAsDelivered(Long orderId, DeliverOrderRequestDto requestDto);
 }

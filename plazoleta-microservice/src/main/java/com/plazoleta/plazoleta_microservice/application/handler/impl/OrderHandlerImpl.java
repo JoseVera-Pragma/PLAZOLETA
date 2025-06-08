@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.application.handler.impl;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DeliverOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IOrderHandler;
 import com.plazoleta.plazoleta_microservice.application.mapper.IOrderRequestMapper;
@@ -41,5 +42,10 @@ public class OrderHandlerImpl implements IOrderHandler {
     @Override
     public void markOrderAsReady(Long orderId) {
         orderServicePort.markOrderAsReady(orderId);
+    }
+
+    @Override
+    public void markOrderAsDelivered(Long orderId, DeliverOrderRequestDto requestDto) {
+        orderServicePort.markOrderAsDelivered(orderId, requestDto.getPin());
     }
 }
