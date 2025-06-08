@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.application.handler.impl;
 
 import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderRequestDto;
+import com.plazoleta.plazoleta_microservice.application.dto.request.DeliverOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.application.mapper.IOrderRequestMapper;
@@ -109,5 +110,16 @@ class OrderHandlerImplTest {
         orderHandler.markOrderAsReady(orderId);
 
         verify(orderServicePort).markOrderAsReady(orderId);
+    }
+
+    @Test
+    void testMarkOrderAsDelivered() {
+        Long orderId = 1L;
+        String pin = "1234";
+        DeliverOrderRequestDto dto = new DeliverOrderRequestDto(pin);
+
+        orderHandler.markOrderAsDelivered(orderId, dto);
+
+        verify(orderServicePort).markOrderAsDelivered(orderId, pin);
     }
 }
