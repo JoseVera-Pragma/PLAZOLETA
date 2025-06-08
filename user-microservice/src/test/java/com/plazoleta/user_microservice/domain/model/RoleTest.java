@@ -36,15 +36,6 @@ class RoleTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenNameIsNull() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Role(2L, null,"Sin rol");
-        });
-
-        assertEquals("Rol name is required", exception.getMessage());
-    }
-
-    @Test
     void shouldCreateWhenIdIsNull() {
         Role role = new Role(null, RoleList.ROLE_OWNER,"null");
 

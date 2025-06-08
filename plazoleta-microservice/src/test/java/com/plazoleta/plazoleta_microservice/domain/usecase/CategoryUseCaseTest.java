@@ -15,7 +15,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(properties = "spring.profiles.active=test")
 class CategoryUseCaseTest {
 
     private ICategoryPersistencePort persistencePort;

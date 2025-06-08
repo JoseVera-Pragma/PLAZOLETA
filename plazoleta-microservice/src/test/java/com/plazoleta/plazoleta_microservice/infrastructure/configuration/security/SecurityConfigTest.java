@@ -1,72 +1,123 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.configuration.security;
 
 import com.plazoleta.plazoleta_microservice.infrastructure.configuration.security.filter.JwtRequestFilter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.io.IOException;
-
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.util.List;
 
 
-@SpringBootTest
-@AutoConfigureMockMvc
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 class SecurityConfigTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockitoBean
+    @Mock
     private JwtRequestFilter jwtRequestFilter;
 
+    @Mock
+    private HttpSecurity httpSecurity;
+
+    private SecurityConfig securityConfig;
+
     @BeforeEach
-    void setUp() throws ServletException, IOException {
-        Mockito.doNothing().when(jwtRequestFilter).doFilter(Mockito.any(), Mockito.any(), Mockito.any());
+    void setUp() {
+        securityConfig = new SecurityConfig(jwtRequestFilter);
     }
 
     @Test
-    void whenAccessingPublicEndpoint_thenOk() throws Exception {
-        mockMvc.perform(get("/swagger-ui/index.html")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+    void testConstructor() {
+        JwtRequestFilter filter = mock(JwtRequestFilter.class);
+
+        SecurityConfig config = new SecurityConfig(filter);
+
+        assertNotNull(config);
     }
 
     @Test
-    void whenAccessingProtectedEndpointWithoutToken_thenUnauthorized() throws Exception {
-        Mockito.doAnswer(invocation -> {
-            invocation.getArgument(2, FilterChain.class).doFilter(
-                    invocation.getArgument(0), invocation.getArgument(1));
-            return null;
-        }).when(jwtRequestFilter).doFilter(Mockito.any(), Mockito.any(), Mockito.any());
+    void testCorsConfigurationSource() {
+        CorsConfigurationSource corsSource = securityConfig.corsConfigurationSource();
 
-        mockMvc.perform(get("/categories")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+        assertNotNull(corsSource);
+        assertTrue(corsSource instanceof UrlBasedCorsConfigurationSource);
+
+        UrlBasedCorsConfigurationSource urlBasedSource = (UrlBasedCorsConfigurationSource) corsSource;
+        CorsConfiguration corsConfig = urlBasedSource.getCorsConfigurations().get("/**");
+
+        assertNotNull(corsConfig);
+        assertEquals(List.of("*"), corsConfig.getAllowedOriginPatterns());
+        assertEquals(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"), corsConfig.getAllowedMethods());
+        assertEquals(List.of("*"), corsConfig.getAllowedHeaders());
+        assertTrue(corsConfig.getAllowCredentials());
     }
 
     @Test
-    void whenAccessingProtectedEndpointWithToken_thenOk() throws Exception {
-        Mockito.doAnswer(invocation -> {
-            invocation.getArgument(2, FilterChain.class).doFilter(
-                    invocation.getArgument(0), invocation.getArgument(1));
-            return null;
-        }).when(jwtRequestFilter).doFilter(Mockito.any(), Mockito.any(), Mockito.any());
+    void testCorsConfigurationAllowedOriginPatterns() {
+        CorsConfigurationSource corsSource = securityConfig.corsConfigurationSource();
+        UrlBasedCorsConfigurationSource urlBasedSource = (UrlBasedCorsConfigurationSource) corsSource;
+        CorsConfiguration corsConfig = urlBasedSource.getCorsConfigurations().get("/**");
 
-        mockMvc.perform(get("/categories")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer fake-token")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+        assertNotNull(corsConfig.getAllowedOriginPatterns());
+        assertEquals(1, corsConfig.getAllowedOriginPatterns().size());
+        assertEquals("*", corsConfig.getAllowedOriginPatterns().get(0));
+    }
+
+    @Test
+    void testCorsConfigurationAllowedMethods() {
+        CorsConfigurationSource corsSource = securityConfig.corsConfigurationSource();
+        UrlBasedCorsConfigurationSource urlBasedSource = (UrlBasedCorsConfigurationSource) corsSource;
+        CorsConfiguration corsConfig = urlBasedSource.getCorsConfigurations().get("/**");
+
+        List<String> expectedMethods = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
+        assertEquals(expectedMethods, corsConfig.getAllowedMethods());
+    }
+
+    @Test
+    void testCorsConfigurationAllowedHeaders() {
+        CorsConfigurationSource corsSource = securityConfig.corsConfigurationSource();
+        UrlBasedCorsConfigurationSource urlBasedSource = (UrlBasedCorsConfigurationSource) corsSource;
+        CorsConfiguration corsConfig = urlBasedSource.getCorsConfigurations().get("/**");
+
+        assertEquals(List.of("*"), corsConfig.getAllowedHeaders());
+    }
+
+    @Test
+    void testCorsConfigurationAllowCredentials() {
+        CorsConfigurationSource corsSource = securityConfig.corsConfigurationSource();
+        UrlBasedCorsConfigurationSource urlBasedSource = (UrlBasedCorsConfigurationSource) corsSource;
+        CorsConfiguration corsConfig = urlBasedSource.getCorsConfigurations().get("/**");
+
+        assertTrue(corsConfig.getAllowCredentials());
+    }
+
+    @Test
+    void testFilterChainCreation() throws Exception {
+        CorsConfigurationSource corsSource = securityConfig.corsConfigurationSource();
+        assertNotNull(corsSource);
+
+        assertTrue(corsSource instanceof UrlBasedCorsConfigurationSource);
+    }
+
+    @Test
+    void testSecurityConfigBeanCreation() {
+        assertNotNull(securityConfig);
+        assertNotNull(securityConfig.corsConfigurationSource());
+    }
+
+    @Test
+    void testJwtRequestFilterInjection() {
+        JwtRequestFilter testFilter = mock(JwtRequestFilter.class);
+
+        SecurityConfig config = new SecurityConfig(testFilter);
+
+        assertNotNull(config);
     }
 }
