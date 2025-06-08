@@ -48,4 +48,9 @@ public class OrderHandlerImpl implements IOrderHandler {
     public void markOrderAsDelivered(Long orderId, DeliverOrderRequestDto requestDto) {
         orderServicePort.markOrderAsDelivered(orderId, requestDto.getPin());
     }
+
+    @Override
+    public void markOrderAsCanceled(Long orderId){
+        orderServicePort.markOrderAsCanceled(orderId);
+    }
 }
