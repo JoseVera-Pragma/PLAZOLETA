@@ -122,4 +122,13 @@ class OrderHandlerImplTest {
 
         verify(orderServicePort).markOrderAsDelivered(orderId, pin);
     }
+
+    @Test
+    void testMarkOrderAsCanceled() {
+        Long orderId = 1L;
+
+        orderHandler.markOrderAsCanceled(orderId);
+
+        verify(orderServicePort).markOrderAsCanceled(orderId);
+    }
 }
