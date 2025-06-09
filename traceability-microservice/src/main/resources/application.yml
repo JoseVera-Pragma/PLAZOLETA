@@ -1,0 +1,21 @@
+server:
+  port: 8084
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: traceability-microservice
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/trazabilidad_db
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+
+jwt:
+  secret: ${JWT_SECRET}
