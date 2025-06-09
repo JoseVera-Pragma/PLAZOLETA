@@ -8,11 +8,11 @@ import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantRespon
 import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantResumeResponseMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
+@ExtendWith(MockitoExtension.class)
 class RestaurantHandlerImplTest {
 
     @Mock
@@ -37,11 +37,6 @@ class RestaurantHandlerImplTest {
 
     @InjectMocks
     private RestaurantHandlerImpl restaurantHandler;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
     @Test
     void testCreateRestaurant() {

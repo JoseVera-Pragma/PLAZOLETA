@@ -10,12 +10,12 @@ import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotF
 import com.plazoleta.plazoleta_microservice.domain.model.*;
 import com.plazoleta.plazoleta_microservice.domain.spi.*;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +23,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class OrderUseCaseTest {
 
     @Mock
@@ -37,37 +38,57 @@ class OrderUseCaseTest {
     private IUserServiceClientPort userServiceClientPort;
     @Mock
     private ISendSmsPort sendSmsPort;
+    @Mock
+    private ITraceabilityClientPort traceabilityClientPort;
 
     @InjectMocks
     private OrderUseCase orderUseCase;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
     @Test
     void createOrder_shouldSaveOrder_whenValid() {
         Long customerId = 1L;
         Long restaurantId = 10L;
+        Long dishId = 100L;
+
         Dish dish = Dish.builder().id(100L).restaurantId(restaurantId).build();
         OrderDish orderDish = new OrderDish(100L, 1);
         Restaurant restaurant = Restaurant.builder().id(restaurantId).build();
-
+        User user = User.builder().email("test@example.com").build();
         Order order = Order.builder()
                 .restaurant(restaurant)
                 .dishes(List.of(orderDish))
                 .build();
 
-        when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(false);
-        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
+        Order orderToSave = order.withCustomerId(customerId)
+                .withStatus(OrderStatus.PENDING)
+                .withDishes(List.of(orderDish))
+                .withRestaurant(restaurant);
+
+        Order savedOrder = orderToSave.builder().id(1L).build();
+
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
-        when(dishPersistencePort.findDishById(100L)).thenReturn(Optional.of(dish));
-        doNothing().when(orderPersistencePort).saveOrder(any(Order.class));
+        when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(false);
+        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(restaurant));
+        when(dishPersistencePort.findDishById(dishId)).thenReturn(Optional.of(dish));
+        when(orderPersistencePort.saveOrder(any(Order.class))).thenReturn(savedOrder);
+        when(userServiceClientPort.findUserById(customerId)).thenReturn(user);
+        doNothing().when(traceabilityClientPort).saveTraceability(any(Traceability.class));
 
         orderUseCase.createOrder(order);
 
-        verify(orderPersistencePort).saveOrder(any(Order.class));
+        verify(orderPersistencePort).saveOrder(argThat(saved ->
+                saved.getCustomerId().equals(customerId)
+                        && saved.getStatus() == OrderStatus.PENDING
+                        && saved.getRestaurant().equals(restaurant)
+                        && saved.getDishes().size() == 1
+        ));
+
+        verify(traceabilityClientPort).saveTraceability(argThat(trace ->
+                trace.getOrderId().equals(savedOrder.getId())
+                        && trace.getCustomerId().equals(customerId)
+                        && trace.getCustomerEmail().equals("test@example.com")
+                        && trace.getNewState().equals(OrderStatus.PENDING.name())
+        ));
     }
 
     @Test
@@ -91,8 +112,6 @@ class OrderUseCaseTest {
                 .dishes(List.of(orderDish))
                 .build();
 
-        when(orderPersistencePort.customerHasOrdersInProcess(anyLong())).thenReturn(false);
-        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> orderUseCase.createOrder(order));
@@ -235,16 +254,42 @@ class OrderUseCaseTest {
     void assignOrder_shouldUpdateOrder_whenValid() {
         Long orderId = 5L;
         Long employedId = 1L;
-        Order order = Order.builder().id(orderId).build();
+        Long customerId = 20L;
 
-        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
+        Order existingOrder = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.PENDING)
+                .customerId(customerId)
+                .build();
+
+        Order updatedOrder = existingOrder.withChefId(employedId).withStatus(OrderStatus.IN_PREPARATION);
+
+        User customer = User.builder().email("customer@example.com").build();
+        User employed = User.builder().email("chef@example.com").build();
+
+
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(existingOrder));
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
+        when(orderPersistencePort.updateOrder(any(Order.class))).thenReturn(updatedOrder);
+        when(userServiceClientPort.findUserById(customerId)).thenReturn(customer);
+        when(userServiceClientPort.findUserById(employedId)).thenReturn(employed);
+        doNothing().when(traceabilityClientPort).saveTraceability(any(Traceability.class));
 
         orderUseCase.assignOrder(orderId);
 
-        verify(orderPersistencePort).updateOrder(argThat(updatedOrder ->
-                updatedOrder.getChefId().equals(employedId) &&
-                        updatedOrder.getStatus() == OrderStatus.IN_PREPARATION
+        verify(orderPersistencePort).updateOrder(argThat(updated ->
+                updated.getChefId().equals(employedId) &&
+                        updated.getStatus() == OrderStatus.IN_PREPARATION
+        ));
+
+        verify(traceabilityClientPort).saveTraceability(argThat(trace ->
+                trace.getOrderId().equals(orderId) &&
+                        trace.getCustomerId().equals(customerId) &&
+                        trace.getCustomerEmail().equals("customer@example.com") &&
+                        trace.getPreviousState().equals(OrderStatus.PENDING.name()) &&
+                        trace.getNewState().equals(OrderStatus.IN_PREPARATION.name()) &&
+                        trace.getEmployedId().equals(employedId) &&
+                        trace.getEmployedEmail().equals("chef@example.com")
         ));
     }
 
@@ -268,10 +313,25 @@ class OrderUseCaseTest {
     }
 
     @Test
+    void assignOrder_shouldInvalidOrderStatusException_whenUserNotFound() {
+        Long orderId = 5L;
+        Long employedId = 1L;
+        Order order = Order.builder().id(orderId).status(OrderStatus.IN_PREPARATION).build();
+
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
+
+        assertThrows(InvalidOrderStatusException.class, () -> orderUseCase.assignOrder(orderId));
+    }
+
+    @Test
     void markOrderAsReady_shouldGeneratePinUpdateOrderAndSendSms() {
         Long orderId = 1L;
         Long customerId = 100L;
-        String phone = "+123456789";
+        Long employedId = 10L;
+        String customerPhone = "+123456789";
+        String customerEmail = "customer@example.com";
+        String employedEmail = "employee@example.com";
 
         Order existingOrder = Order.builder()
                 .id(orderId)
@@ -280,12 +340,24 @@ class OrderUseCaseTest {
                 .securityPin(null)
                 .build();
 
-        User user = User.builder()
-                .phoneNumber(phone)
+        User customer = User.builder()
+                .phoneNumber(customerPhone)
+                .email(customerEmail)
                 .build();
 
+        User employed = User.builder()
+                .email(employedEmail)
+                .build();
+
+        Order updatedOrderMock = existingOrder
+                .withStatus(OrderStatus.READY)
+                .withSecurityPin("1234");
+
         when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(existingOrder));
-        when(userServiceClientPort.findUserById(customerId)).thenReturn(user);
+        when(userServiceClientPort.findUserById(customerId)).thenReturn(customer);
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
+        when(userServiceClientPort.findUserById(employedId)).thenReturn(employed);
+        when(orderPersistencePort.updateOrder(any(Order.class))).thenReturn(updatedOrderMock);
 
         orderUseCase.markOrderAsReady(orderId);
 
@@ -298,7 +370,17 @@ class OrderUseCaseTest {
         assertEquals(4, updatedOrder.getSecurityPin().length());
 
         String expectedMessage = "Your order is ready. Use this PIN to claim it: " + updatedOrder.getSecurityPin();
-        verify(sendSmsPort).sendSms(eq(phone), eq(expectedMessage));
+        verify(sendSmsPort).sendSms(customerPhone,expectedMessage);
+
+        verify(traceabilityClientPort).saveTraceability(argThat(trace ->
+                trace.getOrderId().equals(orderId) &&
+                        trace.getCustomerId().equals(customerId) &&
+                        trace.getCustomerEmail().equals(customerEmail) &&
+                        trace.getPreviousState().equals(OrderStatus.IN_PREPARATION.name()) &&
+                        trace.getNewState().equals(OrderStatus.READY.name()) &&
+                        trace.getEmployedId().equals(employedId) &&
+                        trace.getEmployedEmail().equals(employedEmail)
+        ));
     }
 
     @Test
@@ -333,16 +415,35 @@ class OrderUseCaseTest {
 
     @Test
     void markOrderAsDelivered_Successful() {
+        Long orderId = 1L;
+        Long customerId = 100L;
+        Long employedId = 200L;
+        String pin = "1234";
+
         Order order = Order.builder()
-                .id(1L)
+                .id(orderId)
+                .customerId(customerId)
                 .status(OrderStatus.READY)
-                .securityPin("1234")
+                .securityPin(pin)
                 .build();
 
-        when(orderPersistencePort.findOrderById(1L))
-                .thenReturn(Optional.of(order));
+        Order updatedOrderMock = order.withStatus(OrderStatus.DELIVERED);
 
-        orderUseCase.markOrderAsDelivered(1L, "1234");
+        User customer = User.builder()
+                .email("customer@example.com")
+                .build();
+
+        User employed = User.builder()
+                .email("employed@example.com")
+                .build();
+
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
+        when(orderPersistencePort.updateOrder(any(Order.class))).thenReturn(updatedOrderMock);
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
+        when(userServiceClientPort.findUserById(employedId)).thenReturn(employed);
+        when(userServiceClientPort.findUserById(customerId)).thenReturn(customer);
+
+        orderUseCase.markOrderAsDelivered(orderId, pin);
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderPersistencePort).updateOrder(orderCaptor.capture());
@@ -351,6 +452,16 @@ class OrderUseCaseTest {
         assertEquals(OrderStatus.DELIVERED, updated.getStatus());
         assertEquals(order.getId(), updated.getId());
         assertEquals(order.getSecurityPin(), updated.getSecurityPin());
+
+        verify(traceabilityClientPort).saveTraceability(argThat(trace ->
+                trace.getOrderId().equals(orderId) &&
+                        trace.getCustomerId().equals(customerId) &&
+                        trace.getCustomerEmail().equals("customer@example.com") &&
+                        trace.getPreviousState().equals(OrderStatus.READY.name()) &&
+                        trace.getNewState().equals(OrderStatus.DELIVERED.name()) &&
+                        trace.getEmployedId().equals(employedId) &&
+                        trace.getEmployedEmail().equals("employed@example.com")
+        ));
     }
 
     @Test
@@ -394,17 +505,27 @@ class OrderUseCaseTest {
 
     @Test
     void markOrderAsCanceled_Successful() {
+        Long orderId = 1L;
+        Long customerId = 1L;
+
         Order order = Order.builder()
-                .id(1L)
-                .customerId(1L)
+                .id(orderId)
+                .customerId(customerId)
                 .status(OrderStatus.PENDING)
                 .build();
 
-        when(orderPersistencePort.findOrderById(1L))
-                .thenReturn(Optional.of(order));
-        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(1L));
+        Order updatedOrderMock = order.withStatus(OrderStatus.CANCELLED);
 
-        orderUseCase.markOrderAsCanceled(1L);
+        User customer = User.builder()
+                .email("customer@example.com")
+                .build();
+
+        when(orderPersistencePort.findOrderById(orderId)).thenReturn(Optional.of(order));
+        when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
+        when(orderPersistencePort.updateOrder(any(Order.class))).thenReturn(updatedOrderMock);
+        when(userServiceClientPort.findUserById(customerId)).thenReturn(customer);
+
+        orderUseCase.markOrderAsCanceled(orderId);
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderPersistencePort).updateOrder(orderCaptor.capture());
@@ -412,6 +533,14 @@ class OrderUseCaseTest {
         Order updated = orderCaptor.getValue();
         assertEquals(OrderStatus.CANCELLED, updated.getStatus());
         assertEquals(order.getId(), updated.getId());
+
+        verify(traceabilityClientPort).saveTraceability(argThat(trace ->
+                trace.getOrderId().equals(orderId) &&
+                        trace.getCustomerId().equals(customerId) &&
+                        trace.getCustomerEmail().equals("customer@example.com") &&
+                        trace.getPreviousState().equals(OrderStatus.PENDING.name()) &&
+                        trace.getNewState().equals(OrderStatus.CANCELLED.name())
+        ));
     }
 
     @Test

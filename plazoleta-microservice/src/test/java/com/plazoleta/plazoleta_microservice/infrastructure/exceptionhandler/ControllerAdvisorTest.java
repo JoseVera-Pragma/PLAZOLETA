@@ -2,10 +2,10 @@ package com.plazoleta.plazoleta_microservice.infrastructure.exceptionhandler;
 
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderInProcessException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.DuplicateNitException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidPhoneNumberException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.CustomerHasActiveOrderException;
 import com.plazoleta.plazoleta_microservice.infrastructure.exception.UserServiceUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -116,11 +116,11 @@ class ControllerAdvisorTest {
     }
 
     @Test
-    void testHandleCustomerHasActiveOrderException() {
-        CustomerHasActiveOrderException ex = new CustomerHasActiveOrderException(1L);
-        ResponseEntity<String> response = advisor.handleCustomerHasActiveOrderException(ex);
+    void testHandleOrderInProcessException() {
+        OrderInProcessException ex = new OrderInProcessException("Order in process");
+        ResponseEntity<ApiError> response = advisor.handleCustomerHasActiveOrderException(ex, request);
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        assertEquals("Customer with ID " + 1L + " already has an order in process.", response.getBody());
+        assertEquals("Order in process", response.getBody().getMessage());
     }
 
     @Test

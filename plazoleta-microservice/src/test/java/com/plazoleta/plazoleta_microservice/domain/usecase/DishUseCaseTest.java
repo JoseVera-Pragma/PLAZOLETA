@@ -12,15 +12,18 @@ import com.plazoleta.plazoleta_microservice.domain.spi.IAuthenticatedUserPort;
 import com.plazoleta.plazoleta_microservice.domain.spi.ICategoryPersistencePort;
 import com.plazoleta.plazoleta_microservice.domain.spi.IDishPersistencePort;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class DishUseCaseTest {
 
     @Mock
@@ -34,11 +37,6 @@ class DishUseCaseTest {
 
     @InjectMocks
     private DishUseCase dishUseCase;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
     @Test
     void saveDish_shouldSaveSuccessfully_whenValidOwnerAndCategory() {
@@ -121,16 +119,15 @@ class DishUseCaseTest {
     @Test
     void saveDish_shouldThrowCategoryNotFoundException_whenCategoryNotFound() {
         Long restaurantId = 10L;
-        String categoryName = "Category1";
         Restaurant restaurant = Restaurant.builder().idOwner(1L).id(restaurantId).build();
         Dish dish = Dish.builder()
                 .restaurantId(restaurantId)
-                .category(new Category(1L,"test","test"))
+                .category(new Category(null,"test","test"))
                 .build();
 
         when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(restaurant));
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(1L));
-        when(categoryPersistencePort.findCategoryByName(categoryName)).thenReturn(Optional.empty());
+        when(categoryPersistencePort.findCategoryByName("test")).thenReturn(Optional.empty());
 
         assertThrows(CategoryNotFoundException.class, () -> dishUseCase.saveDish(dish));
     }

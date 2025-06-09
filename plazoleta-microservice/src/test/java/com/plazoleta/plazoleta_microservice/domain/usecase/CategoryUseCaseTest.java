@@ -7,6 +7,10 @@ import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.spi.ICategoryPersistencePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
@@ -15,16 +19,19 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class CategoryUseCaseTest {
 
+    @Mock
     private ICategoryPersistencePort persistencePort;
+
+    @InjectMocks
     private CategoryUseCase useCase;
 
     private final Category category = new Category(1L, "Postre", "Descripción postres");
 
     @BeforeEach
     void setUp() {
-        persistencePort = mock(ICategoryPersistencePort.class);
         useCase = new CategoryUseCase(persistencePort);
     }
 
