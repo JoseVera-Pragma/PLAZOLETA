@@ -2,13 +2,14 @@ package com.plazoleta.plazoleta_microservice.domain.spi;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import org.aspectj.weaver.ast.Or;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface IOrderPersistencePort {
 
-    void saveOrder(Order order);
+    Order saveOrder(Order order);
 
     Optional<Order> findOrderById(Long orderId);
 
@@ -18,5 +19,5 @@ public interface IOrderPersistencePort {
 
     List<Order> findOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage);
 
-    void updateOrder(Order order);
+    Order updateOrder(Order order);
 }

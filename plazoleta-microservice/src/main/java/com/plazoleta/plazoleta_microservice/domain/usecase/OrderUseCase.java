@@ -25,18 +25,20 @@ public class OrderUseCase implements IOrderServicePort {
     private final IAuthenticatedUserPort authenticatedUserPort;
     private final IUserServiceClientPort userServiceClientPort;
     private final ISendSmsPort sendSmsPort;
+    private final ITraceabilityClientPort traceabilityClientPort;
 
     public OrderUseCase(IOrderPersistencePort orderPersistencePort,
                         IDishPersistencePort dishPersistencePort,
                         IRestaurantPersistencePort restaurantPersistencePort,
                         IAuthenticatedUserPort authenticatedUserPort,
-                        IUserServiceClientPort userServiceClientPort, ISendSmsPort sendSmsPort) {
+                        IUserServiceClientPort userServiceClientPort, ISendSmsPort sendSmsPort, ITraceabilityClientPort traceabilityClientPort) {
         this.orderPersistencePort = orderPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.authenticatedUserPort = authenticatedUserPort;
         this.userServiceClientPort = userServiceClientPort;
         this.sendSmsPort = sendSmsPort;
+        this.traceabilityClientPort = traceabilityClientPort;
     }
 
     @Override
@@ -63,7 +65,18 @@ public class OrderUseCase implements IOrderServicePort {
                 .withDishes(orderDishes)
                 .withRestaurant(restaurant);
 
-        orderPersistencePort.saveOrder(orderToSave);
+        Order orderSaved = orderPersistencePort.saveOrder(orderToSave);
+
+        User customer = userServiceClientPort.findUserById(customerId);
+
+        Traceability traceability = Traceability.builder()
+                .orderId(orderSaved.getId())
+                .customerId(customerId)
+                .customerEmail(customer.getEmail())
+                .newState(OrderStatus.PENDING.name())
+                .build();
+
+        traceabilityClientPort.saveTraceability(traceability);
     }
 
     @Override
@@ -104,8 +117,27 @@ public class OrderUseCase implements IOrderServicePort {
         Long employedId = authenticatedUserPort.getCurrentUserId().orElseThrow(
                 () -> new UserNotFoundException("User not found."));
 
-        Order orderUpdated = order.withChefId(employedId).withStatus(OrderStatus.IN_PREPARATION);
-        orderPersistencePort.updateOrder(orderUpdated);
+        if (!order.getStatus().equals(OrderStatus.PENDING)) {
+            throw new InvalidOrderStatusException("Order is not pending");
+        }
+
+        Order orderToUpdated = order.withChefId(employedId).withStatus(OrderStatus.IN_PREPARATION);
+        Order orderUpdated = orderPersistencePort.updateOrder(orderToUpdated);
+
+        User customer = userServiceClientPort.findUserById(orderUpdated.getCustomerId());
+        User employed = userServiceClientPort.findUserById(employedId);
+
+        Traceability traceability = Traceability.builder()
+                .orderId(orderUpdated.getId())
+                .customerId(orderUpdated.getCustomerId())
+                .customerEmail(customer.getEmail())
+                .previousState(OrderStatus.PENDING.name())
+                .newState(OrderStatus.IN_PREPARATION.name())
+                .employedId(employedId)
+                .employedEmail(employed.getEmail())
+                .build();
+
+        traceabilityClientPort.saveTraceability(traceability);
     }
 
     private List<OrderDish> validateAndEnrichOrderDishes(List<OrderDish> orderDishes, Long restaurantId) {
@@ -141,11 +173,28 @@ public class OrderUseCase implements IOrderServicePort {
         String pin = generatePin();
         Order updatedOrder = order.withSecurityPin(pin).withStatus(OrderStatus.READY);
 
-        orderPersistencePort.updateOrder(updatedOrder);
+        Order orderUpdated = orderPersistencePort.updateOrder(updatedOrder);
 
-        String customerPhoneNumber = userServiceClientPort.findUserById(order.getCustomerId()).getPhoneNumber();
+        User customer = userServiceClientPort.findUserById(order.getCustomerId());
         String message = "Your order is ready. Use this PIN to claim it: " + pin;
-        sendSmsPort.sendSms(customerPhoneNumber, message);
+        sendSmsPort.sendSms(customer.getPhoneNumber(), message);
+
+        Long employedId = authenticatedUserPort.getCurrentUserId().orElseThrow(
+                () -> new UserNotFoundException("User not found."));
+
+        User employed = userServiceClientPort.findUserById(employedId);
+
+        Traceability traceability = Traceability.builder()
+                .orderId(orderUpdated.getId())
+                .customerId(orderUpdated.getCustomerId())
+                .customerEmail(customer.getEmail())
+                .previousState(OrderStatus.IN_PREPARATION.name())
+                .newState(OrderStatus.READY.name())
+                .employedId(employedId)
+                .employedEmail(employed.getEmail())
+                .build();
+
+        traceabilityClientPort.saveTraceability(traceability);
     }
 
     @Override
@@ -165,7 +214,26 @@ public class OrderUseCase implements IOrderServicePort {
 
         Order updatedOrder = order.withStatus(OrderStatus.DELIVERED);
 
-        orderPersistencePort.updateOrder(updatedOrder);
+        Order orderUpdated = orderPersistencePort.updateOrder(updatedOrder);
+
+        Long employedId = authenticatedUserPort.getCurrentUserId().orElseThrow(
+                () -> new UserNotFoundException("User not found."));
+
+        User employed = userServiceClientPort.findUserById(employedId);
+
+        User customer = userServiceClientPort.findUserById(orderUpdated.getCustomerId());
+
+        Traceability traceability = Traceability.builder()
+                .orderId(orderUpdated.getId())
+                .customerId(orderUpdated.getCustomerId())
+                .customerEmail(customer.getEmail())
+                .previousState(OrderStatus.READY.name())
+                .newState(OrderStatus.DELIVERED.name())
+                .employedId(employedId)
+                .employedEmail(employed.getEmail())
+                .build();
+
+        traceabilityClientPort.saveTraceability(traceability);
     }
 
     @Override
@@ -190,7 +258,19 @@ public class OrderUseCase implements IOrderServicePort {
 
         Order updatedOrder = order.withStatus(OrderStatus.CANCELLED);
 
-        orderPersistencePort.updateOrder(updatedOrder);
+        Order orderUpdated = orderPersistencePort.updateOrder(updatedOrder);
+
+        User customer = userServiceClientPort.findUserById(orderUpdated.getCustomerId());
+
+        Traceability traceability = Traceability.builder()
+                .orderId(orderUpdated.getId())
+                .customerId(orderUpdated.getCustomerId())
+                .customerEmail(customer.getEmail())
+                .previousState(OrderStatus.PENDING.name())
+                .newState(OrderStatus.CANCELLED.name())
+                .build();
+
+        traceabilityClientPort.saveTraceability(traceability);
     }
 
     private String generatePin() {
