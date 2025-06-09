@@ -31,7 +31,7 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
     private final IOrderEntityMapper orderEntityMapper;
 
     @Override
-    public void saveOrder(Order order) {
+    public Order saveOrder(Order order) {
         OrderEntity orderEntity = orderEntityMapper.toEntity(order);
         OrderEntity savedOrder = orderRepository.save(orderEntity);
         List<OrderDishEntity> dishEntities = order.getDishes().stream()
@@ -52,6 +52,7 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
 
 
         orderDishRepository.saveAll(dishEntities);
+        return orderEntityMapper.toDomain(savedOrder);
     }
 
     @Override
@@ -87,8 +88,8 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
     }
 
     @Override
-    public void updateOrder(Order order) {
+    public Order updateOrder(Order order) {
         OrderEntity entity = orderEntityMapper.toEntity(order);
-        orderRepository.save(entity);
+        return orderEntityMapper.toDomain(orderRepository.save(entity));
     }
 }

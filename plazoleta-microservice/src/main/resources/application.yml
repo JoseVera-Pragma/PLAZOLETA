@@ -26,6 +26,10 @@ logging:
     feign.Client: DEBUG
     feign.Logger: DEBUG
 
+traceability:
+  service:
+    url: localhost:8084/api/v1
+
 sms:
   service:
     url: localhost:8083/api/v1

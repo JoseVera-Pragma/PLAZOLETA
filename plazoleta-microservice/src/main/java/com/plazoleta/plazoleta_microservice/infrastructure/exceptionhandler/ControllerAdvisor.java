@@ -9,9 +9,9 @@ import com.plazoleta.plazoleta_microservice.domain.exception.dish.InvalidDishDat
 import com.plazoleta.plazoleta_microservice.domain.exception.dish.UnauthorizedOwnerException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.InvalidOrderStatusException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderAccessDeniedException;
+import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderInProcessException;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.*;
-import com.plazoleta.plazoleta_microservice.infrastructure.exception.CustomerHasActiveOrderException;
 import com.plazoleta.plazoleta_microservice.infrastructure.exception.UserServiceUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -89,9 +89,9 @@ public class ControllerAdvisor {
         return buildResponse(HttpStatus.BAD_REQUEST, "Request body is missing or malformed.", request.getRequestURI());
     }
 
-    @ExceptionHandler(CustomerHasActiveOrderException.class)
-    public ResponseEntity<String> handleCustomerHasActiveOrderException(CustomerHasActiveOrderException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    @ExceptionHandler(OrderInProcessException.class)
+    public ResponseEntity<ApiError> handleCustomerHasActiveOrderException(OrderInProcessException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler({DuplicateNitException.class, CategoryAlreadyExistsException.class, CategoryInUseException.class, DataAccessException.class})

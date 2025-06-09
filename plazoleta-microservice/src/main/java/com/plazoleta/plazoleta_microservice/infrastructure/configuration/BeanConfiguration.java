@@ -18,7 +18,7 @@ import com.plazoleta.plazoleta_microservice.domain.usecase.CategoryUseCase;
 import com.plazoleta.plazoleta_microservice.domain.usecase.DishUseCase;
 import com.plazoleta.plazoleta_microservice.domain.usecase.OrderUseCase;
 import com.plazoleta.plazoleta_microservice.domain.usecase.RestaurantUseCase;
-import com.plazoleta.plazoleta_microservice.infrastructure.out.feing.IUserFeignClient;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.feign.client.IUserFeignClient;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter.CategoryJpaAdapter;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter.DishJpaAdapter;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter.OrderJpaAdapter;
@@ -112,8 +112,8 @@ public class BeanConfiguration {
     @Bean
     public IOrderServicePort orderServicePort(IOrderPersistencePort orderPersistencePort, IDishPersistencePort dishPersistencePort,
                                               IRestaurantPersistencePort restaurantPersistencePort, IAuthenticatedUserPort authenticatedUserPort,
-                                              IUserServiceClientPort userServiceClientPort, ISendSmsPort sendSmsPort) {
-        return new OrderUseCase(orderPersistencePort, dishPersistencePort, restaurantPersistencePort, authenticatedUserPort, userServiceClientPort, sendSmsPort);
+                                              IUserServiceClientPort userServiceClientPort, ISendSmsPort sendSmsPort, ITraceabilityClientPort traceabilityClientPort) {
+        return new OrderUseCase(orderPersistencePort, dishPersistencePort, restaurantPersistencePort, authenticatedUserPort, userServiceClientPort, sendSmsPort, traceabilityClientPort);
     }
 
     @Bean
