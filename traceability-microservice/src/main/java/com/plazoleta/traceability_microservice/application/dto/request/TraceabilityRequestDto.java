@@ -15,6 +15,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TraceabilityRequestDto {
 
+    @NotNull(message = "Restaurant ID must not be null")
+    private Long restaurantId;
+
     @NotNull(message = "Order ID must not be null")
     private Long orderId;
 
