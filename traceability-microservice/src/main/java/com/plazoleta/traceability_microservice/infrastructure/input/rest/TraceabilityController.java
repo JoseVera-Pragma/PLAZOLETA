@@ -1,6 +1,8 @@
 package com.plazoleta.traceability_microservice.infrastructure.input.rest;
 
 import com.plazoleta.traceability_microservice.application.dto.request.TraceabilityRequestDto;
+import com.plazoleta.traceability_microservice.application.dto.response.EfficiencyResponseDto;
+import com.plazoleta.traceability_microservice.application.dto.response.EmployeeEfficiencyRankingResponseDto;
 import com.plazoleta.traceability_microservice.application.dto.response.TraceabilityResponseDto;
 import com.plazoleta.traceability_microservice.application.handler.ITraceabilityHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,5 +58,34 @@ public class TraceabilityController {
             @PathVariable Long orderId
     ) {
         return ResponseEntity.ok(handler.getTraceabilityByOrder(orderId));
+    }
+
+    @Operation(summary = "Obtener eficiencia por pedido", description = "Devuelve una lista con el tiempo de atención (inicio-fin) de cada pedido en un restaurante.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de eficiencias obtenida correctamente"),
+            @ApiResponse(responseCode = "403", description = "No autorizado para acceder al recurso"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @PreAuthorize("hasRole('OWNER')")
+    @GetMapping("/efficiency/restaurant/{restaurantId}/orders")
+    public ResponseEntity<List<EfficiencyResponseDto>> getOrderEfficiencies(
+            @Parameter(description = "ID del restaurante", required = true)@PathVariable Long restaurantId
+    ) {
+        return ResponseEntity.ok(handler.getOrderEfficiencies(restaurantId));
+    }
+
+    @Operation(summary = "Obtener ranking de empleados", description = "Devuelve un ranking de empleados del restaurante ordenado por su eficiencia promedio.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ranking de empleados obtenido correctamente"),
+            @ApiResponse(responseCode = "403", description = "No autorizado para acceder al recurso"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @PreAuthorize("hasRole('OWNER')")
+    @GetMapping("/ranking/restaurant/{restaurantId}")
+    public ResponseEntity<List<EmployeeEfficiencyRankingResponseDto>> getEmployeeRanking(
+            @Parameter(description = "ID del restaurante", required = true)
+            @PathVariable Long restaurantId
+    ) {
+        return ResponseEntity.ok(handler.getEmployeeRankingByRestaurant(restaurantId));
     }
 }

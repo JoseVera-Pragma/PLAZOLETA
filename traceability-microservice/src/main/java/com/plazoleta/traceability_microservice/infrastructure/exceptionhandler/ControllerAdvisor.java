@@ -2,6 +2,7 @@ package com.plazoleta.traceability_microservice.infrastructure.exceptionhandler;
 
 
 import com.plazoleta.traceability_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.traceability_microservice.infrastructure.exception.UserServiceUnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
@@ -31,6 +32,11 @@ public class ControllerAdvisor {
     })
     public ResponseEntity<ApiError> handleNotFoundDomainExceptions(RuntimeException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(UserServiceUnavailableException.class)
+    public ResponseEntity<ApiError> handleUserServiceUnavailable(UserServiceUnavailableException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(DataAccessException.class)
