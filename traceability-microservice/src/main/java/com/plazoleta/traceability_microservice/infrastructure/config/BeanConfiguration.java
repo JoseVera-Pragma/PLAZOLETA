@@ -2,6 +2,8 @@ package com.plazoleta.traceability_microservice.infrastructure.config;
 
 import com.plazoleta.traceability_microservice.application.handler.ITraceabilityHandler;
 import com.plazoleta.traceability_microservice.application.handler.impl.TraceabilityHandlerImpl;
+import com.plazoleta.traceability_microservice.application.mapper.IEfficiencyResponseMapper;
+import com.plazoleta.traceability_microservice.application.mapper.IEmployeeEfficiencyRankingResponseMapper;
 import com.plazoleta.traceability_microservice.application.mapper.TraceabilityRequestMapper;
 import com.plazoleta.traceability_microservice.application.mapper.TraceabilityResponseMapper;
 import com.plazoleta.traceability_microservice.domain.api.ITraceabilityServicePort;
@@ -23,6 +25,8 @@ public class BeanConfiguration {
     private final TraceabilityRequestMapper traceabilityRequestMapper;
     private final TraceabilityResponseMapper traceabilityResponseMapper;
     private final TraceabilityDocumentMapper traceabilityDocumentMapper;
+    private final IEfficiencyResponseMapper efficiencyResponseMapper;
+    private final IEmployeeEfficiencyRankingResponseMapper employeeEfficiencyRankingResponseMapper;
 
     @Bean
     public ITraceabilityPersistencePort traceabilityPersistencePort() {
@@ -36,7 +40,7 @@ public class BeanConfiguration {
 
     @Bean
     public ITraceabilityHandler traceabilityHandler(ITraceabilityServicePort traceabilityServicePort) {
-        return new TraceabilityHandlerImpl(traceabilityServicePort, traceabilityRequestMapper, traceabilityResponseMapper);
+        return new TraceabilityHandlerImpl(traceabilityServicePort, traceabilityRequestMapper, traceabilityResponseMapper, efficiencyResponseMapper, employeeEfficiencyRankingResponseMapper);
     }
 
 }
