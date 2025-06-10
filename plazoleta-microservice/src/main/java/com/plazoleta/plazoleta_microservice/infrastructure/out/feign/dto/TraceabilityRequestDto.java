@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class TraceabilityRequestDto {
+    private Long restaurantId;
     private Long orderId;
     private Long customerId;
     private String customerEmail;
