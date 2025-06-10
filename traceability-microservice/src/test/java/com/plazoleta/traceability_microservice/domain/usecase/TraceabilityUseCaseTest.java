@@ -1,6 +1,8 @@
 package com.plazoleta.traceability_microservice.domain.usecase;
 
 import com.plazoleta.traceability_microservice.domain.exception.UserNotFoundException;
+import com.plazoleta.traceability_microservice.domain.model.EfficiencyReport;
+import com.plazoleta.traceability_microservice.domain.model.EmployeeEfficiencyRanking;
 import com.plazoleta.traceability_microservice.domain.model.Traceability;
 import com.plazoleta.traceability_microservice.domain.spi.IAuthenticatedUserPort;
 import com.plazoleta.traceability_microservice.domain.spi.ITraceabilityPersistencePort;
@@ -11,6 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +33,30 @@ class TraceabilityUseCaseTest {
 
     @InjectMocks
     private TraceabilityUseCase traceabilityUseCase;
+
+    private final Long RESTAURANT_ID = 1L;
+    private final Long EMPLOYEE_ID = 100L;
+
+    private List<Traceability> createMockLogs() {
+        return List.of(
+                Traceability.builder()
+                        .restaurantId(RESTAURANT_ID)
+                        .orderId(10L)
+                        .date(LocalDateTime.of(2024, 6, 1, 10, 0))
+                        .newState("PENDING")
+                        .employedId(null)
+                        .employedEmail(null)
+                        .build(),
+                Traceability.builder()
+                        .restaurantId(RESTAURANT_ID)
+                        .orderId(10L)
+                        .date(LocalDateTime.of(2024, 6, 1, 10, 30))
+                        .newState("DELIVERED")
+                        .employedId(EMPLOYEE_ID)
+                        .employedEmail("empleado@example.com")
+                        .build()
+        );
+    }
 
     @Test
     void saveTraceability_shouldSaveWithCurrentDate() {
@@ -82,4 +110,32 @@ class TraceabilityUseCaseTest {
             traceabilityUseCase.findTraceabilityForCustomer(1L);
         });
     }
+
+    @Test
+    void testGetOrderEfficienciesByRestaurant() {
+        when(persistencePort.findAllByRestaurantId(RESTAURANT_ID)).thenReturn(createMockLogs());
+
+        List<EfficiencyReport> result = traceabilityUseCase.getOrderEfficienciesByRestaurant(RESTAURANT_ID);
+
+        assertEquals(1, result.size());
+        EfficiencyReport report = result.getFirst();
+        assertEquals(10L, report.getOrderId());
+        assertEquals(Duration.ofMinutes(30), report.getDuration());
+        assertNull(report.getEmployeeId());
+        assertNull(report.getEmployeeEmail());
+    }
+
+    @Test
+    void testGetEmployeeEfficiencyRanking() {
+        when(persistencePort.findAllByRestaurantId(RESTAURANT_ID)).thenReturn(createMockLogs());
+
+        List<EmployeeEfficiencyRanking> rankings = traceabilityUseCase.getEmployeeEfficiencyRanking(RESTAURANT_ID);
+
+        assertEquals(1, rankings.size());
+        EmployeeEfficiencyRanking ranking = rankings.get(0);
+        assertEquals(EMPLOYEE_ID, ranking.getEmployeeId());
+        assertEquals("empleado@example.com", ranking.getEmployeeEmail());
+        assertEquals(Duration.ofMinutes(30), ranking.getDuration());
+    }
+
 }

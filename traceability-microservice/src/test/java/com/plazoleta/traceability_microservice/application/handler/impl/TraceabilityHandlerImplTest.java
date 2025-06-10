@@ -1,10 +1,16 @@
 package com.plazoleta.traceability_microservice.application.handler.impl;
 
 import com.plazoleta.traceability_microservice.application.dto.request.TraceabilityRequestDto;
+import com.plazoleta.traceability_microservice.application.dto.response.EfficiencyResponseDto;
+import com.plazoleta.traceability_microservice.application.dto.response.EmployeeEfficiencyRankingResponseDto;
 import com.plazoleta.traceability_microservice.application.dto.response.TraceabilityResponseDto;
+import com.plazoleta.traceability_microservice.application.mapper.IEfficiencyResponseMapper;
+import com.plazoleta.traceability_microservice.application.mapper.IEmployeeEfficiencyRankingResponseMapper;
 import com.plazoleta.traceability_microservice.application.mapper.TraceabilityRequestMapper;
 import com.plazoleta.traceability_microservice.application.mapper.TraceabilityResponseMapper;
 import com.plazoleta.traceability_microservice.domain.api.ITraceabilityServicePort;
+import com.plazoleta.traceability_microservice.domain.model.EfficiencyReport;
+import com.plazoleta.traceability_microservice.domain.model.EmployeeEfficiencyRanking;
 import com.plazoleta.traceability_microservice.domain.model.Traceability;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,6 +35,10 @@ class TraceabilityHandlerImplTest {
     private TraceabilityRequestMapper requestMapper;
     @Mock
     private TraceabilityResponseMapper responseMapper;
+    @Mock
+    private IEfficiencyResponseMapper efficiencyResponseMapper;
+    @Mock
+    private IEmployeeEfficiencyRankingResponseMapper employeeRankingMapper;
 
     @InjectMocks
     private TraceabilityHandlerImpl handler;
@@ -74,5 +85,40 @@ class TraceabilityHandlerImplTest {
         assertEquals(dto, result.getFirst());
         verify(servicePort).findTraceabilityForCustomer(orderId);
         verify(responseMapper).toTraceabilityResponseDto(traceability);
+    }
+
+    @Test
+    void getOrderEfficiencies_ShouldReturnMappedDtos() {
+        Long restaurantId = 1L;
+        EfficiencyReport report = new EfficiencyReport(1L, Duration.ofMinutes(30), 10L, "email@test.com");
+        EfficiencyResponseDto dto = new EfficiencyResponseDto(1L, 30L);
+
+        when(servicePort.getOrderEfficienciesByRestaurant(restaurantId)).thenReturn(List.of(report));
+        when(efficiencyResponseMapper.toResponseDto(report)).thenReturn(dto);
+
+        List<EfficiencyResponseDto> result = handler.getOrderEfficiencies(restaurantId);
+
+        assertEquals(1, result.size());
+        assertEquals(30L, result.getFirst().getDurationInMinutes());
+        verify(servicePort).getOrderEfficienciesByRestaurant(restaurantId);
+        verify(efficiencyResponseMapper).toResponseDto(report);
+    }
+
+    @Test
+    void getEmployeeRankingByRestaurant_ShouldReturnMappedDtos() {
+        Long restaurantId = 1L;
+        EmployeeEfficiencyRanking ranking = new EmployeeEfficiencyRanking(10L, "email@test.com", Duration.ofMinutes(20));
+        EmployeeEfficiencyRankingResponseDto dto = new EmployeeEfficiencyRankingResponseDto(10L, "email@test.com", 20L);
+
+        when(servicePort.getEmployeeEfficiencyRanking(restaurantId)).thenReturn(List.of(ranking));
+        when(employeeRankingMapper.toDto(ranking)).thenReturn(dto);
+
+        List<EmployeeEfficiencyRankingResponseDto> result = handler.getEmployeeRankingByRestaurant(restaurantId);
+
+        assertEquals(1, result.size());
+        assertEquals(10L, result.getFirst().getEmployeeId());
+        assertEquals(20L, result.getFirst().getDurationInMinutes());
+        verify(servicePort).getEmployeeEfficiencyRanking(restaurantId);
+        verify(employeeRankingMapper).toDto(ranking);
     }
 }
