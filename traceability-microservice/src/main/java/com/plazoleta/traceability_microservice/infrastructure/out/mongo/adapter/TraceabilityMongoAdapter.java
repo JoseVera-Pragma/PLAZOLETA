@@ -2,6 +2,7 @@ package com.plazoleta.traceability_microservice.infrastructure.out.mongo.adapter
 
 import com.plazoleta.traceability_microservice.domain.model.Traceability;
 import com.plazoleta.traceability_microservice.domain.spi.ITraceabilityPersistencePort;
+import com.plazoleta.traceability_microservice.infrastructure.out.mongo.entity.TraceabilityDocument;
 import com.plazoleta.traceability_microservice.infrastructure.out.mongo.mapper.TraceabilityDocumentMapper;
 import com.plazoleta.traceability_microservice.infrastructure.out.mongo.repository.TraceabilityRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,14 @@ public class TraceabilityMongoAdapter implements ITraceabilityPersistencePort {
     public List<Traceability> findTraceabilityByOrderAndCustomer(Long orderId, Long customerId) {
         return repository.findByOrderIdAndCustomerId(orderId, customerId)
                 .stream()
+                .map(mapper::toTraceability)
+                .toList();
+    }
+
+    @Override
+    public List<Traceability> findAllByRestaurantId(Long restaurantId) {
+        List<TraceabilityDocument> documents = repository.findAllByRestaurantId(restaurantId);
+        return documents.stream()
                 .map(mapper::toTraceability)
                 .toList();
     }
