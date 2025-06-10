@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.model;
 
 public class Traceability {
+    private final Long restaurantId;
     private final Long orderId;
     private final Long customerId;
     private final String customerEmail;
@@ -10,6 +11,7 @@ public class Traceability {
     private final String employedEmail;
 
     private Traceability(Builder builder) {
+        this.restaurantId = builder.restaurantId;
         this.orderId = builder.orderId;
         this.customerId = builder.customerId;
         this.customerEmail = builder.customerEmail;
@@ -24,6 +26,7 @@ public class Traceability {
     }
 
     public static class Builder {
+        private Long restaurantId;
         private Long orderId;
         private Long customerId;
         private String customerEmail;
@@ -31,6 +34,11 @@ public class Traceability {
         private String newState;
         private Long employedId;
         private String employedEmail;
+
+        public Builder restaurantId(Long restaurantId) {
+            this.restaurantId = restaurantId;
+            return this;
+        }
 
         public Builder orderId(Long orderId) {
             this.orderId = orderId;
@@ -72,6 +80,10 @@ public class Traceability {
         }
     }
 
+    public Long getRestaurantId() {
+        return restaurantId;
+    }
+
     public String getCustomerEmail() {
         return customerEmail;
     }
@@ -79,7 +91,6 @@ public class Traceability {
     public Long getCustomerId() {
         return customerId;
     }
-
 
     public String getEmployedEmail() {
         return employedEmail;

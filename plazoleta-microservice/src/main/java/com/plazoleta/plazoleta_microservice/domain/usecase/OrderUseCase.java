@@ -70,6 +70,7 @@ public class OrderUseCase implements IOrderServicePort {
         User customer = userServiceClientPort.findUserById(customerId);
 
         Traceability traceability = Traceability.builder()
+                .restaurantId(orderSaved.getRestaurant().getId())
                 .orderId(orderSaved.getId())
                 .customerId(customerId)
                 .customerEmail(customer.getEmail())
@@ -128,6 +129,7 @@ public class OrderUseCase implements IOrderServicePort {
         User employed = userServiceClientPort.findUserById(employedId);
 
         Traceability traceability = Traceability.builder()
+                .restaurantId(orderUpdated.getRestaurant().getId())
                 .orderId(orderUpdated.getId())
                 .customerId(orderUpdated.getCustomerId())
                 .customerEmail(customer.getEmail())
@@ -185,6 +187,7 @@ public class OrderUseCase implements IOrderServicePort {
         User employed = userServiceClientPort.findUserById(employedId);
 
         Traceability traceability = Traceability.builder()
+                .restaurantId(orderUpdated.getRestaurant().getId())
                 .orderId(orderUpdated.getId())
                 .customerId(orderUpdated.getCustomerId())
                 .customerEmail(customer.getEmail())
@@ -224,6 +227,7 @@ public class OrderUseCase implements IOrderServicePort {
         User customer = userServiceClientPort.findUserById(orderUpdated.getCustomerId());
 
         Traceability traceability = Traceability.builder()
+                .restaurantId(orderUpdated.getRestaurant().getId())
                 .orderId(orderUpdated.getId())
                 .customerId(orderUpdated.getCustomerId())
                 .customerEmail(customer.getEmail())
@@ -263,6 +267,7 @@ public class OrderUseCase implements IOrderServicePort {
         User customer = userServiceClientPort.findUserById(orderUpdated.getCustomerId());
 
         Traceability traceability = Traceability.builder()
+                .restaurantId(orderUpdated.getRestaurant().getId())
                 .orderId(orderUpdated.getId())
                 .customerId(orderUpdated.getCustomerId())
                 .customerEmail(customer.getEmail())
