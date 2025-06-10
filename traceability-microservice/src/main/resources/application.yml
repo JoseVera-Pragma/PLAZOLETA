@@ -19,3 +19,13 @@ logging:
 
 jwt:
   secret: ${JWT_SECRET}
+
+user:
+  service:
+    url: localhost:8081/api/v1
+
+feign:
+  client:
+    config:
+      default:
+        loggerLevel: FULL
