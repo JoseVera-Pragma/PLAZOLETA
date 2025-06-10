@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public class Traceability {
     private final String id;
+    private final Long restaurantId;
     private final Long orderId;
     private final Long customerId;
     private final String customerEmail;
@@ -15,6 +16,7 @@ public class Traceability {
 
     private Traceability(Builder builder) {
         this.id = builder.id;
+        this.restaurantId = builder.restaurantId;
         this.orderId = builder.orderId;
         this.customerId = builder.customerId;
         this.customerEmail = builder.customerEmail;
@@ -31,6 +33,7 @@ public class Traceability {
 
     public static class Builder {
         private String id;
+        private Long restaurantId;
         private Long orderId;
         private Long customerId;
         private String customerEmail;
@@ -42,6 +45,11 @@ public class Traceability {
 
         public Builder id(String id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder restaurantId(Long restaurantId) {
+            this.restaurantId = restaurantId;
             return this;
         }
 
@@ -93,6 +101,7 @@ public class Traceability {
     public Traceability whitDate(LocalDateTime date) {
         return Traceability.builder()
                 .id(this.id)
+                .restaurantId(this.restaurantId)
                 .orderId(this.orderId)
                 .customerId(this.customerId)
                 .customerEmail(this.customerEmail)
@@ -102,6 +111,10 @@ public class Traceability {
                 .employedId(this.employedId)
                 .employedEmail(this.employedEmail)
                 .build();
+    }
+
+    public Long getRestaurantId() {
+        return restaurantId;
     }
 
     public String getCustomerEmail() {
