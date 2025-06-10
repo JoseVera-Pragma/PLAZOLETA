@@ -7,4 +7,5 @@ import java.util.List;
 public interface ITraceabilityPersistencePort {
     void saveTraceability(Traceability traceability);
     List<Traceability> findTraceabilityByOrderAndCustomer(Long orderId, Long customerId);
+    List<Traceability> findAllByRestaurantId(Long restaurantId);
 }
