@@ -10,6 +10,7 @@ import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotF
 import com.plazoleta.plazoleta_microservice.domain.model.*;
 import com.plazoleta.plazoleta_microservice.domain.spi.*;
 import com.plazoleta.plazoleta_microservice.domain.exception.order.OrderNotFoundException;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -59,12 +60,11 @@ class OrderUseCaseTest {
                 .dishes(List.of(orderDish))
                 .build();
 
-        Order orderToSave = order.withCustomerId(customerId)
-                .withStatus(OrderStatus.PENDING)
-                .withDishes(List.of(orderDish))
-                .withRestaurant(restaurant);
-
-        Order savedOrder = orderToSave.builder().id(1L).build();
+        Order savedOrder = Order.builder()
+                .id(1L)
+                .restaurant(restaurant)
+                .dishes(List.of(orderDish))
+                .build();
 
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(customerId));
         when(orderPersistencePort.customerHasOrdersInProcess(customerId)).thenReturn(false);
@@ -211,19 +211,30 @@ class OrderUseCaseTest {
         Long employedId = 1L;
         Long restaurantId = 10L;
         OrderStatus status = OrderStatus.PENDING;
-        List<Order> orders = List.of(Order.builder().id(1L).build());
+
+        List<Order> orderList = List.of(Order.builder().id(1L).build());
+        Page<Order> expectedPage = new Page<>(orderList, 0, 10, orderList.size());
 
         when(authenticatedUserPort.getCurrentUserId()).thenReturn(Optional.of(employedId));
         when(userServiceClientPort.findUserById(employedId)).thenReturn(
                 com.plazoleta.plazoleta_microservice.domain.model.User.builder()
                         .restaurantId(restaurantId)
                         .build());
-        when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
-        when(orderPersistencePort.findOrdersByStatusAndRestaurantId(restaurantId, status, 0, 10)).thenReturn(orders);
+        when(restaurantPersistencePort.findRestaurantById(restaurantId))
+                .thenReturn(Optional.of(Restaurant.builder().id(restaurantId).build()));
+        when(orderPersistencePort.findOrdersByStatusAndRestaurantId(restaurantId, status, 0, 10))
+                .thenReturn(expectedPage);
 
-        List<Order> result = orderUseCase.findOrdersByStatusForAuthenticatedEmployee(status, 0, 10);
+        Page<Order> result = orderUseCase.findOrdersByStatusForAuthenticatedEmployee(status, 0, 10);
 
-        assertEquals(orders, result);
+        assertNotNull(result);
+        assertEquals(expectedPage.getContent().size(), result.getContent().size());
+        assertEquals(expectedPage.getContent().getFirst(), result.getContent().getFirst());
+
+        verify(authenticatedUserPort).getCurrentUserId();
+        verify(userServiceClientPort).findUserById(employedId);
+        verify(restaurantPersistencePort).findRestaurantById(restaurantId);
+        verify(orderPersistencePort).findOrdersByStatusAndRestaurantId(restaurantId, status, 0, 10);
     }
 
     @Test
@@ -256,13 +267,17 @@ class OrderUseCaseTest {
         Long employedId = 1L;
         Long customerId = 20L;
 
+        Restaurant restaurant = Restaurant.builder().id(99L).build();
+
         Order existingOrder = Order.builder()
                 .id(orderId)
                 .status(OrderStatus.PENDING)
                 .customerId(customerId)
+                .restaurant(restaurant)
                 .build();
 
-        Order updatedOrder = existingOrder.withChefId(employedId).withStatus(OrderStatus.IN_PREPARATION);
+        Order updatedOrder = existingOrder.withChefId(employedId)
+                .withStatus(OrderStatus.IN_PREPARATION);
 
         User customer = User.builder().email("customer@example.com").build();
         User employed = User.builder().email("chef@example.com").build();
@@ -333,11 +348,14 @@ class OrderUseCaseTest {
         String customerEmail = "customer@example.com";
         String employedEmail = "employee@example.com";
 
+        Restaurant restaurant = Restaurant.builder().id(99L).build();
+
         Order existingOrder = Order.builder()
                 .id(orderId)
                 .customerId(customerId)
                 .status(OrderStatus.IN_PREPARATION)
                 .securityPin(null)
+                .restaurant(restaurant)
                 .build();
 
         User customer = User.builder()
@@ -420,11 +438,14 @@ class OrderUseCaseTest {
         Long employedId = 200L;
         String pin = "1234";
 
+        Restaurant restaurant = Restaurant.builder().id(99L).build();
+
         Order order = Order.builder()
                 .id(orderId)
                 .customerId(customerId)
                 .status(OrderStatus.READY)
                 .securityPin(pin)
+                .restaurant(restaurant)
                 .build();
 
         Order updatedOrderMock = order.withStatus(OrderStatus.DELIVERED);
@@ -508,10 +529,13 @@ class OrderUseCaseTest {
         Long orderId = 1L;
         Long customerId = 1L;
 
+        Restaurant restaurant = Restaurant.builder().id(99L).build();
+
         Order order = Order.builder()
                 .id(orderId)
                 .customerId(customerId)
                 .status(OrderStatus.PENDING)
+                .restaurant(restaurant)
                 .build();
 
         Order updatedOrderMock = order.withStatus(OrderStatus.CANCELLED);

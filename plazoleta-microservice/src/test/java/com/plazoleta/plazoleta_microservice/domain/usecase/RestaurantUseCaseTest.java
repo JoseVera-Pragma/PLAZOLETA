@@ -6,25 +6,27 @@ import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.model.User;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.plazoleta_microservice.domain.spi.IUserServiceClientPort;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class RestaurantUseCaseTest {
-
+    @Mock
     private IRestaurantPersistencePort restaurantPersistencePort;
+    @Mock
     private IUserServiceClientPort userServiceClientPort;
+    @InjectMocks
     private RestaurantUseCase restaurantUseCase;
-
-    @BeforeEach
-    void setUp() {
-        restaurantPersistencePort = mock(IRestaurantPersistencePort.class);
-        userServiceClientPort = mock(IUserServiceClientPort.class);
-        restaurantUseCase = new RestaurantUseCase(restaurantPersistencePort, userServiceClientPort);
-    }
 
     @Test
     void createRestaurant_shouldSave_whenValidOwnerAndUniqueNit() {
@@ -117,6 +119,9 @@ class RestaurantUseCaseTest {
 
     @Test
     void findAllRestaurants_shouldReturnList() {
+        int pageIndex = 0;
+        int pageSize = 2;
+
         List<Restaurant> restaurants = List.of(
                 Restaurant.builder()
                         .id(1L)
@@ -139,11 +144,15 @@ class RestaurantUseCaseTest {
                         .build()
         );
 
-        when(restaurantPersistencePort.findAllRestaurants(0, 10)).thenReturn(restaurants);
+        Page<Restaurant> expectedPage = new Page<>(restaurants, pageIndex, pageSize, 10L);
 
-        List<Restaurant> result = restaurantUseCase.findAllRestaurants(0, 10);
+        when(restaurantPersistencePort.findAllRestaurants(pageIndex, pageSize)).thenReturn(expectedPage);
 
-        assertEquals(2, result.size());
-        verify(restaurantPersistencePort).findAllRestaurants(0, 10);
+        Page<Restaurant> result = restaurantUseCase.findAllRestaurants(pageIndex, pageSize);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals(10, result.getTotalElements());
+        verify(restaurantPersistencePort, times(1)).findAllRestaurants(pageIndex, pageSize);
     }
 }

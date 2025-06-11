@@ -1,6 +1,7 @@
 package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IDishEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -87,17 +87,27 @@ class DishJpaAdapterTest {
 
     @Test
     void testFindAllDishesByRestaurantIdAndCategoryId() {
-        Pageable pageable = PageRequest.of(0, 5);
-        List<DishEntity> entities = List.of(entityDish);
-        Page<DishEntity> page = new PageImpl<>(entities);
+        int pageIndex = 0;
+        int elementsPerPage = 5;
+        Pageable pageable = PageRequest.of(pageIndex, elementsPerPage);
 
-        when(dishRepository.findAllByRestaurantIdAndCategoryId(10L, 20L, pageable)).thenReturn(page);
+        List<DishEntity> entities = List.of(entityDish);
+        PageImpl<DishEntity> springPage = new PageImpl<>(entities, pageable, entities.size());
+
+        when(dishRepository.findAllByRestaurantIdAndCategoryId(10L, 20L, pageable)).thenReturn(springPage);
         when(dishEntityMapper.toModel(entityDish)).thenReturn(domainDish);
 
-        List<Dish> result = dishJpaAdapter.findAllDishesByRestaurantIdAndCategoryId(10L, 20L, 0, 5);
+        Page<Dish> result = dishJpaAdapter.findAllDishesByRestaurantIdAndCategoryId(10L, 20L, pageIndex, elementsPerPage);
 
-        assertEquals(1, result.size());
-        assertEquals(domainDish, result.getFirst());
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals(domainDish, result.getContent().getFirst());
+        assertEquals(pageIndex, result.getPageNumber());
+        assertEquals(elementsPerPage, result.getPageSize());
+        assertEquals(1, result.getTotalElements());
+
+        verify(dishRepository).findAllByRestaurantIdAndCategoryId(10L, 20L, pageable);
+        verify(dishEntityMapper).toModel(entityDish);
     }
 
     @Test

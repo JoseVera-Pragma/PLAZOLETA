@@ -34,7 +34,7 @@ class IOrderResponseMapperTest {
         Order order4 = Order.builder().id(4L).status(OrderStatus.CANCELLED).build();
         List<Order> orders = List.of(order1, order2, order3, order4);
 
-        List<OrderResponseDto> responseDtos = mapper.toResponsesDto(orders);
+        List<OrderResponseDto> responseDtos = mapper.toOrderResponseList(orders);
 
         assertEquals(4, responseDtos.size());
         assertEquals("Listo", responseDtos.get(0).getStatusDescription());

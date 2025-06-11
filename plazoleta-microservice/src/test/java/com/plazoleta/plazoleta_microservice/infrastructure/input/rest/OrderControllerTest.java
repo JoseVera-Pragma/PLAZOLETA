@@ -7,6 +7,7 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.DishOrderReq
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IOrderHandler;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.infrastructure.configuration.security.adapter.JwtTokenAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,14 +75,18 @@ class OrderControllerTest {
     @Test
     @WithMockUser(roles = "EMPLOYED")
     void getOrdersByStatus_shouldReturnOrderList() throws Exception {
+        Page<OrderResponseDto> pageResponse = new Page<>(List.of(orderResponseDto), 0, 10, 1);
+
         when(orderHandler.findOrdersByStatusForAuthenticatedEmployee(OrderStatus.PENDING, 0, 10))
-                .thenReturn(List.of(orderResponseDto));
+                .thenReturn(pageResponse);
 
         mockMvc.perform(get("/orders/status/PENDING")
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1));
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.pageSize").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test

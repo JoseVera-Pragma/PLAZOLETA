@@ -5,6 +5,7 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestD
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.infrastructure.configuration.security.adapter.JwtTokenAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,14 +106,31 @@ class DishControllerTest {
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
-    void getDishesByCategory_shouldReturnList() throws Exception {
-        when(dishHandler.getDishesByRestaurantAndCategory(1L, 2L, 0, 10))
-                .thenReturn(List.of(dishResponseDto));
+    void getDishesByCategory_shouldReturnPage() throws Exception {
+        DishResponseDto dishResponseDto = DishResponseDto.builder()
+                .id(1L)
+                .name("Plato Test")
+                .active(true)
+                .build();
+
+        List<DishResponseDto> content = List.of(dishResponseDto);
+
+        Page<DishResponseDto> pagedResponse = new Page<>(
+                content,
+                0,
+                10,
+                1L
+        );
+
+        when(dishHandler.getDishesByRestaurantAndCategory(1L, 2L, 0, 10)).thenReturn(pagedResponse);
 
         mockMvc.perform(get("/dishes/restaurant/1/category/2")
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Plato Test"));
+                .andExpect(jsonPath("$.content[0].name").value("Plato Test"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.pageSize").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 }

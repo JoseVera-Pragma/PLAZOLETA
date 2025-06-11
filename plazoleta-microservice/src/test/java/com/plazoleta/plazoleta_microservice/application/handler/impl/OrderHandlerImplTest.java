@@ -10,6 +10,7 @@ import com.plazoleta.plazoleta_microservice.domain.api.IOrderServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -74,20 +75,26 @@ class OrderHandlerImplTest {
                 Order.builder().id(2L).build()
         );
 
+        Page<Order> orderPage = new Page<>(orders, pageIndex, elementsPerPage, orders.size());
+
         List<OrderResponseDto> responseDtos = List.of(
-                new OrderResponseDto(1L, 100L, 200L, "2024-01-01", status, "Pending", "1234", 10L),
-                new OrderResponseDto(2L, 101L, 201L, "2024-01-02", status, "Pending", "1234",10L)
+                new OrderResponseDto(1L, 100L, 200L, "2024-01-01", status, "Pendiente", "1234", 10L),
+                new OrderResponseDto(2L, 101L, 201L, "2024-01-02", status, "Pendiente", "1234", 10L)
         );
 
-        when(orderServicePort.findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage)).thenReturn(orders);
-        when(orderResponseMapper.toResponsesDto(orders)).thenReturn(responseDtos);
+        Page<OrderResponseDto> expectedResponsePage = new Page<>(responseDtos, pageIndex, elementsPerPage, responseDtos.size());
 
-        List<OrderResponseDto> result = orderHandler.findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage);
+        when(orderServicePort.findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage)).thenReturn(orderPage);
+        when(orderResponseMapper.toOrderResponsePage(orderPage)).thenReturn(expectedResponsePage);
 
-        assertEquals(2, result.size());
-        assertEquals(1L, result.getFirst().getId());
+        Page<OrderResponseDto> result = orderHandler.findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals(1L, result.getContent().getFirst().getId());
+
         verify(orderServicePort).findOrdersByStatusForAuthenticatedEmployee(status, pageIndex, elementsPerPage);
-        verify(orderResponseMapper).toResponsesDto(orders);
+        verify(orderResponseMapper).toOrderResponsePage(orderPage);
     }
 
     @Test

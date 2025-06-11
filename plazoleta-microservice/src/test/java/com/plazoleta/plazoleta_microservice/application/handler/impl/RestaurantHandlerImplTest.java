@@ -8,6 +8,7 @@ import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantRespon
 import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantResumeResponseMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -108,21 +109,39 @@ class RestaurantHandlerImplTest {
                         .build()
         );
 
-        List<RestaurantResumeResponseDto> resumeDtos = List.of(
+        Page<Restaurant> restaurantPage = new Page<>(
+                restaurantList,
+                pageIndex,
+                elementsPerPage,
+                10L
+        );
+
+        List<RestaurantResumeResponseDto> dtoList = List.of(
                 new RestaurantResumeResponseDto("Rest1", "logo1.png"),
                 new RestaurantResumeResponseDto("Rest2", "logo2.png")
         );
 
-        when(restaurantServicePort.findAllRestaurants(pageIndex, elementsPerPage)).thenReturn(restaurantList);
-        when(restaurantResumeResponseMapper.toResumeDtoList(restaurantList)).thenReturn(resumeDtos);
+        Page<RestaurantResumeResponseDto> dtoPage = new Page<>(
+                dtoList,
+                pageIndex,
+                elementsPerPage,
+                10L
+        );
 
-        List<RestaurantResumeResponseDto> result = restaurantHandler.restaurantList(pageIndex, elementsPerPage);
+        when(restaurantServicePort.findAllRestaurants(pageIndex, elementsPerPage)).thenReturn(restaurantPage);
+        when(restaurantResumeResponseMapper.toResumeDtoPage(restaurantPage)).thenReturn(dtoPage);
 
-        assertEquals(2, result.size());
-        assertEquals("Rest1", result.get(0).name());
-        assertEquals("Rest2", result.get(1).name());
+        Page<RestaurantResumeResponseDto> result = restaurantHandler.restaurantPage(pageIndex, elementsPerPage);
+
+
+        assertEquals(2, result.getContent().size());
+        assertEquals("Rest1", result.getContent().get(0).name());
+        assertEquals("Rest2", result.getContent().get(1).name());
+        assertEquals(10, result.getTotalElements());
+        assertEquals(0, result.getPageNumber());
+        assertEquals(2, result.getPageSize());
 
         verify(restaurantServicePort).findAllRestaurants(pageIndex, elementsPerPage);
-        verify(restaurantResumeResponseMapper).toResumeDtoList(restaurantList);
+        verify(restaurantResumeResponseMapper).toResumeDtoPage(restaurantPage);
     }
 }

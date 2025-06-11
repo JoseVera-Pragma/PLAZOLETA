@@ -9,6 +9,7 @@ import com.plazoleta.plazoleta_microservice.application.mapper.IDishUpdateReques
 import com.plazoleta.plazoleta_microservice.domain.api.IDishServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -122,33 +123,45 @@ class DishHandlerImplTest {
         int pageIndex = 0;
         int elementsPerPage = 3;
 
-        List<Dish> dishList = List.of(
+        List<Dish> domainDishes = List.of(
                 Dish.builder().id(1L).name("Taco").build(),
                 Dish.builder().id(2L).name("Burrito").build()
         );
 
+        Page<Dish> domainPage = new Page<>(
+                domainDishes,
+                pageIndex,
+                elementsPerPage,
+                10L
+        );
+
         List<DishResponseDto> responseDtos = List.of(
-                DishResponseDto.builder()
-                        .id(1L)
-                        .name("Taco")
-                        .active(true)
-                        .build(),
-                DishResponseDto.builder()
-                        .id(2L)
-                        .name("Burrito")
-                        .active(true)
-                        .build()
+                DishResponseDto.builder().id(1L).name("Taco").active(true).build(),
+                DishResponseDto.builder().id(2L).name("Burrito").active(true).build()
+        );
+
+        Page<DishResponseDto> expectedDtoPage = new Page<>(
+                responseDtos,
+                pageIndex,
+                elementsPerPage,
+                10L
         );
 
         when(dishServicePort.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage))
-                .thenReturn(dishList);
-        when(dishResponseMapper.toDishResponseList(dishList)).thenReturn(responseDtos);
+                .thenReturn(domainPage);
 
-        List<DishResponseDto> result = dishHandler.getDishesByRestaurantAndCategory(restaurantId, categoryId, pageIndex, elementsPerPage);
+        when(dishResponseMapper.toDishDtoPage(domainPage))
+                .thenReturn(expectedDtoPage);
 
-        assertEquals(2, result.size());
-        assertEquals("Taco", result.getFirst().getName());
+        Page<DishResponseDto> result = dishHandler.getDishesByRestaurantAndCategory(restaurantId, categoryId, pageIndex, elementsPerPage);
+
+        assertEquals(2, result.getContent().size());
+        assertEquals("Taco", result.getContent().getFirst().getName());
+        assertEquals(10L, result.getTotalElements());
+        assertEquals(pageIndex, result.getPageNumber());
+        assertEquals(elementsPerPage, result.getPageSize());
+
         verify(dishServicePort).findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage);
-        verify(dishResponseMapper).toDishResponseList(dishList);
+        verify(dishResponseMapper).toDishDtoPage(domainPage);
     }
 }

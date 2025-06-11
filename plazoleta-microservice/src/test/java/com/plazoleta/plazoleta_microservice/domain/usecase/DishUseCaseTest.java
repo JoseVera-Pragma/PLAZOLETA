@@ -12,9 +12,11 @@ import com.plazoleta.plazoleta_microservice.domain.spi.IAuthenticatedUserPort;
 import com.plazoleta.plazoleta_microservice.domain.spi.ICategoryPersistencePort;
 import com.plazoleta.plazoleta_microservice.domain.spi.IDishPersistencePort;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -45,7 +47,7 @@ class DishUseCaseTest {
         String categoryName = "test";
 
         Restaurant restaurant = Restaurant.builder().idOwner(ownerId).id(restaurantId).build();
-        Category category = new Category(1L,"test","test");
+        Category category = new Category(1L, "test", "test");
 
         Dish dish = Dish.builder()
                 .id(10L)
@@ -122,7 +124,7 @@ class DishUseCaseTest {
         Restaurant restaurant = Restaurant.builder().idOwner(1L).id(restaurantId).build();
         Dish dish = Dish.builder()
                 .restaurantId(restaurantId)
-                .category(new Category(null,"test","test"))
+                .category(new Category(null, "test", "test"))
                 .build();
 
         when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(restaurant));
@@ -158,7 +160,8 @@ class DishUseCaseTest {
         Long ownerId = 1L;
         Long dishId = 5L;
         Long restaurantId = 10L;
-        Dish existingDish = Dish.builder().id(dishId).restaurantId(restaurantId).build();
+        Category category = new Category(1L, "category", "description");
+        Dish existingDish = Dish.builder().id(dishId).name("Dish").imageUrl("url").restaurantId(restaurantId).category(category).build();
         Restaurant restaurant = Restaurant.builder().idOwner(ownerId).id(restaurantId).build();
         Dish updateData = Dish.builder().price(100.0).description("Nuevo plato").build();
 
@@ -320,20 +323,41 @@ class DishUseCaseTest {
     void findAllDishesByRestaurantIdAndCategoryId_shouldReturnList_whenValid() {
         Long restaurantId = 10L;
         Long categoryId = 5L;
+        int pageIndex = 0;
+        int elementsPerPage = 10;
 
-        Category category = new Category(1L,"test","test");
-
+        Category category = new Category(1L, "test", "test");
         Restaurant restaurant = Restaurant.builder().id(restaurantId).build();
+
+        List<Dish> dishList = List.of(
+                Dish.builder().id(1L).name("Taco").build(),
+                Dish.builder().id(2L).name("Burrito").build()
+        );
+
+        Page<Dish> expectedPage = new Page<>(
+                dishList,
+                pageIndex,
+                elementsPerPage,
+                2L
+        );
 
         when(categoryPersistencePort.findCategoryById(categoryId)).thenReturn(Optional.of(category));
         when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.of(restaurant));
-        when(dishPersistencePort.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, 0, 10))
-                .thenReturn(List.of());
+        when(dishPersistencePort.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage))
+                .thenReturn(expectedPage);
 
-        List<Dish> result = dishUseCase.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, 0, 10);
+        Page<Dish> result = dishUseCase.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage);
 
         assertNotNull(result);
-        verify(dishPersistencePort).findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, 0, 10);
+        assertEquals(2, result.getContent().size());
+        assertEquals("Taco", result.getContent().getFirst().getName());
+        assertEquals(2L, result.getTotalElements());
+        assertEquals(pageIndex, result.getPageNumber());
+        assertEquals(elementsPerPage, result.getPageSize());
+
+        verify(categoryPersistencePort).findCategoryById(categoryId);
+        verify(restaurantPersistencePort).findRestaurantById(restaurantId);
+        verify(dishPersistencePort).findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage);
     }
 
     @Test
@@ -352,7 +376,7 @@ class DishUseCaseTest {
         Long restaurantId = 10L;
         Long categoryId = 5L;
 
-        Category category = new Category(1L,"test","test");
+        Category category = new Category(1L, "test", "test");
 
         when(categoryPersistencePort.findCategoryById(categoryId)).thenReturn(Optional.of(category));
         when(restaurantPersistencePort.findRestaurantById(restaurantId)).thenReturn(Optional.empty());

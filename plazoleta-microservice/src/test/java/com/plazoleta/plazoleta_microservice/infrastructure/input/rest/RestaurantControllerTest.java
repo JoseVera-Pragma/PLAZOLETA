@@ -5,12 +5,15 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.RestaurantRe
 import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResponseDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResumeResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandler;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.infrastructure.configuration.security.adapter.JwtTokenAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -76,12 +79,34 @@ class RestaurantControllerTest {
     @Test
     @WithMockUser(roles = "CUSTOMER")
     void getRestaurants_shouldReturnList() throws Exception {
-        RestaurantResumeResponseDto resume = new RestaurantResumeResponseDto("Testaurant", "http://logo.com");
+        int page = 0;
+        int size = 2;
 
-        when(restaurantHandler.restaurantList(0, 10)).thenReturn(List.of(resume));
+        List<RestaurantResumeResponseDto> dtoList = List.of(
+                new RestaurantResumeResponseDto( "Pizza Loca", "url1"),
+                new RestaurantResumeResponseDto( "Sushi Zen", "url2")
+        );
 
-        mockMvc.perform(get("/restaurants?page=0&size=10"))
+        Page<RestaurantResumeResponseDto> pageResponse = new Page<>(
+                dtoList,
+                page,
+                size,
+                5L
+        );
+
+        when(restaurantHandler.restaurantPage(page, size)).thenReturn(pageResponse);
+
+        mockMvc.perform(get("/restaurants")
+                        .param("page", String.valueOf(page))
+                        .param("size", String.valueOf(size))
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Testaurant"));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(5))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.pageSize").value(2));
+
+        verify(restaurantHandler).restaurantPage(page, size);
     }
 }

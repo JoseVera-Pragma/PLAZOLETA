@@ -4,6 +4,7 @@ import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderDish;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
@@ -16,9 +17,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -139,14 +141,20 @@ class OrderJpaAdapterTest {
 
     @Test
     void testFindOrdersByStatusAndRestaurantId() {
-        Page<OrderEntity> page = new PageImpl<>(List.of(orderEntity));
-        when(orderRepository.findAllByRestaurantIdAndStatus(eq(10L), eq(OrderStatus.PENDING), any(PageRequest.class))).thenReturn(page);
+        PageRequest pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "orderDate"));
+        org.springframework.data.domain.Page<OrderEntity> springPage = new PageImpl<>(List.of(orderEntity), pageable, 1);
+
+        when(orderRepository.findAllByRestaurantIdAndStatus(eq(10L), eq(OrderStatus.PENDING), any(Pageable.class)))
+                .thenReturn(springPage);
         when(orderEntityMapper.toDomain(orderEntity)).thenReturn(order);
 
-        List<Order> result = orderJpaAdapter.findOrdersByStatusAndRestaurantId(10L, OrderStatus.PENDING, 0, 10);
+        Page<Order> result = orderJpaAdapter.findOrdersByStatusAndRestaurantId(10L, OrderStatus.PENDING, 0, 10);
 
-        assertEquals(1, result.size());
-        assertEquals(order, result.getFirst());
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals(order, result.getContent().getFirst());
+        assertEquals(10, result.getPageSize());
+        assertEquals(1, result.getTotalElements());
     }
 
     @Test
