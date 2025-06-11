@@ -19,8 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -69,6 +68,11 @@ class UserUseCaseTest {
         userUseCase.saveCustomerUser(newUser);
 
         verify(userValidator).validateUserCreation(any(User.class), any(Role.class));
+    }
+
+    @Test
+    void validateRequiredFields_success() {
+        assertDoesNotThrow(() -> userValidator.validateRequiredFields(newUser));
     }
 
     @Test

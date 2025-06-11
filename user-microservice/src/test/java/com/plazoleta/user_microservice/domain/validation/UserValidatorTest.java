@@ -71,6 +71,41 @@ class UserValidatorTest {
         assertDoesNotThrow(() -> userValidator.validateUserCreation(validUser, ownerRole));
     }
 
+
+    @Test
+    void validateRequiredFields_allFieldsPresent_noException() {
+        User validUser = baseUserBuilder().build();
+        assertDoesNotThrow(() -> userValidator.validateRequiredFields(validUser));
+    }
+
+    @Test
+    void validateRequiredFields_invalidFirstName_throwsException() {
+        User userWithMissingFirstName = baseUserBuilder().firstName(null).build();
+        User userWithBlankFirstName = baseUserBuilder().firstName("  ").build();
+
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateRequiredFields(userWithMissingFirstName));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateRequiredFields(userWithBlankFirstName));
+    }
+
+    @Test
+    void validateRequiredFields_invalidLastName_throwsException() {
+        User userWithMissingLastName = baseUserBuilder().firstName("test").lastName(null).build();
+        User userWithBlankLastName = baseUserBuilder().firstName("test").lastName("  ").build();
+
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateRequiredFields(userWithMissingLastName));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateRequiredFields(userWithBlankLastName));
+    }
+
+    @Test
+    void validateRequiredFields_missingPassword_throwsException() {
+        User userWithMissingPassword = baseUserBuilder().firstName("test").lastName("last").password(null).build();
+        User userWithBlankPassword = baseUserBuilder().firstName("test").lastName("last").password("  ").build();
+
+
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateRequiredFields(userWithMissingPassword));
+        assertThrows(IllegalArgumentException.class, () -> userValidator.validateRequiredFields(userWithBlankPassword));
+    }
+
     @Test
     void validateEmail_validEmail_noException() {
         assertDoesNotThrow(() -> userValidator.validateEmail("test@example.com"));
@@ -218,16 +253,4 @@ class UserValidatorTest {
                 () -> userValidator.validateRoleCreationPermissions(adminRole, ownerRole));
         assertEquals("Creation of ADMIN users is not allowed.", ex.getMessage());
     }
-/*
-    @Test
-    void validateUserCreation_allValid_noException() {
-        User newUser = baseUserBuilder()
-                .role(employedRole)
-                .restaurantId(1L)
-                .build();
-
-        when(userPersistencePort.getUserByEmail(newUser.getEmail())).thenReturn(Optional.empty());
-
-        assertDoesNotThrow(() -> userValidator.validateUserCreation(newUser, adminRole));
-    }*/
 }

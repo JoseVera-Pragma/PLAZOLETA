@@ -26,6 +26,19 @@ public class UserValidator {
         validateUniqueEmail(newUser.getEmail());
         validateRestaurantId(newUser);
         validateRoleCreationPermissions(newUser.getRole(), creatorRole);
+        validateRequiredFields(newUser);
+    }
+
+    public void validateRequiredFields(User newUser) {
+        if (newUser.getFirstName() == null || newUser.getFirstName().isBlank()) {
+            throw new IllegalArgumentException("Name is required.");
+        }
+        if (newUser.getLastName() == null || newUser.getLastName().isBlank()) {
+            throw new IllegalArgumentException("Last name is required.");
+        }
+        if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Password is required.");
+        }
     }
 
     public void validateRestaurantId(User newUser) {
