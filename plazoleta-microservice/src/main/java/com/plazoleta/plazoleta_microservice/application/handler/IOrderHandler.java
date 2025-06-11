@@ -4,13 +4,14 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.CreateOrderR
 import com.plazoleta.plazoleta_microservice.application.dto.request.DeliverOrderRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 
 import java.util.List;
 
 public interface IOrderHandler {
     void createOrder(CreateOrderRequestDto createOrderRequestDto);
 
-    List<OrderResponseDto> findOrdersByStatusForAuthenticatedEmployee(OrderStatus status, int pageIndex, int elementsPerPage);
+    Page<OrderResponseDto> findOrdersByStatusForAuthenticatedEmployee(OrderStatus status, int pageIndex, int elementsPerPage);
 
     void assignOrder(Long orderId);
 

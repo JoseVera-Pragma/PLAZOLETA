@@ -9,11 +9,10 @@ import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantRespon
 import com.plazoleta.plazoleta_microservice.application.mapper.IRestaurantResumeResponseMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +32,7 @@ public class RestaurantHandlerImpl implements IRestaurantHandler {
     }
 
     @Override
-    public List<RestaurantResumeResponseDto> restaurantList(int pageIndex, int elementsPerPage) {
-        List<Restaurant> restaurantsPage = restaurantServicePort.findAllRestaurants(pageIndex,elementsPerPage);
-        return restaurantResumeResponseMapper.toResumeDtoList(restaurantsPage);
+    public Page<RestaurantResumeResponseDto> restaurantPage(int pageIndex, int elementsPerPage) {
+        return restaurantResumeResponseMapper.toResumeDtoPage(restaurantServicePort.findAllRestaurants(pageIndex,elementsPerPage));
     }
 }

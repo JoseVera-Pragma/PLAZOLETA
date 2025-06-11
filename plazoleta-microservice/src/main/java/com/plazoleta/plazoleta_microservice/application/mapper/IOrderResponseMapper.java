@@ -4,6 +4,7 @@ package com.plazoleta.plazoleta_microservice.application.mapper;
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import org.mapstruct.*;
 
 import java.util.List;
@@ -17,7 +18,17 @@ public interface IOrderResponseMapper {
     @Mapping(target = "restaurantId", source = "restaurant.id")
     OrderResponseDto toResponseDto(Order order);
 
-    List<OrderResponseDto> toResponsesDto(List<Order> orders);
+    List<OrderResponseDto> toOrderResponseList(List<Order> orders);
+
+    default Page<OrderResponseDto> toOrderResponsePage(Page<Order> ordersPage) {
+        List<OrderResponseDto> dtoList = toOrderResponseList(ordersPage.getContent());
+        return new Page<>(
+                dtoList,
+                ordersPage.getPageNumber(),
+                ordersPage.getPageSize(),
+                ordersPage.getTotalElements()
+        );
+    }
 
     @AfterMapping
     default void mapStatusToDescription(Order order, @MappingTarget OrderResponseDto dto) {

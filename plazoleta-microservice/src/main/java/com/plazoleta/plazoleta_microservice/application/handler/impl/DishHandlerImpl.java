@@ -9,11 +9,10 @@ import com.plazoleta.plazoleta_microservice.application.mapper.IDishResponseMapp
 import com.plazoleta.plazoleta_microservice.application.mapper.IDishUpdateRequestMapper;
 import com.plazoleta.plazoleta_microservice.domain.api.IDishServicePort;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +40,7 @@ public class DishHandlerImpl implements IDishHandler {
     }
 
     @Override
-    public List<DishResponseDto> getDishesByRestaurantAndCategory(Long restaurantId,Long categoryId, int pageIndex, int elementsPerPage) {
-        List<Dish> dishPage = dishServicePort.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage);
-        return dishResponseMapper.toDishResponseList(dishPage);
+    public Page<DishResponseDto> getDishesByRestaurantAndCategory(Long restaurantId, Long categoryId, int pageIndex, int elementsPerPage) {
+        return dishResponseMapper.toDishDtoPage(dishServicePort.findAllDishesByRestaurantIdAndCategoryId(restaurantId, categoryId, pageIndex, elementsPerPage));
     }
 }

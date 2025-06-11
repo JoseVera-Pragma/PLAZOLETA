@@ -3,8 +3,7 @@ package com.plazoleta.plazoleta_microservice.application.handler;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
-
-import java.util.List;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 
 public interface IDishHandler {
     DishResponseDto createDish(DishRequestDto dishRequestDto);
@@ -13,5 +12,5 @@ public interface IDishHandler {
 
     void changeDishStatus(Long dishId, boolean activate);
 
-    List<DishResponseDto> getDishesByRestaurantAndCategory(Long restaurantId,Long categoryId, int page, int size);
+    Page<DishResponseDto> getDishesByRestaurantAndCategory(Long restaurantId, Long categoryId, int page, int size);
 }
