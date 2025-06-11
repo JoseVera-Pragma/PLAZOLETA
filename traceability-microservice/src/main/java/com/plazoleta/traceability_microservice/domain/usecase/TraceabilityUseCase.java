@@ -61,7 +61,7 @@ public class TraceabilityUseCase implements ITraceabilityServicePort {
                             null
                     );
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

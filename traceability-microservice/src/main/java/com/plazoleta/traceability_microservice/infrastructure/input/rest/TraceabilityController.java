@@ -52,6 +52,7 @@ public class TraceabilityController {
             @ApiResponse(responseCode = "404", description = "Pedido o cliente no encontrados"),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
+    @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/{orderId}")
     public ResponseEntity<List<TraceabilityResponseDto>> getTraceability(
             @Parameter(description = "ID del pedido", example = "123")
