@@ -3,6 +3,7 @@ package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 import com.plazoleta.plazoleta_microservice.domain.model.Order;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
 import com.plazoleta.plazoleta_microservice.domain.spi.IOrderPersistencePort;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderDishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.OrderDishId;
@@ -12,8 +13,8 @@ import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.ID
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderDishRepository;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IOrderRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +51,6 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
                 })
                 .toList();
 
-
         orderDishRepository.saveAll(dishEntities);
         return orderEntityMapper.toDomain(savedOrder);
     }
@@ -79,12 +79,23 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
     }
 
     @Override
-    public List<Order> findOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage) {
-        Page<OrderEntity> orderPage = orderRepository.findAllByRestaurantIdAndStatus(restaurantId, status, PageRequest.of(pageIndex, elementsPerPage, Sort.by(Sort.Direction.ASC, "orderDate")));
+    public Page<Order> findOrdersByStatusAndRestaurantId(Long restaurantId, OrderStatus status, int pageIndex, int elementsPerPage) {
+        Pageable pageable = PageRequest.of(pageIndex, elementsPerPage, Sort.by(Sort.Direction.ASC, "orderDate"));
 
-        return orderPage.getContent().stream()
+        org.springframework.data.domain.Page<OrderEntity> orderPage =
+                orderRepository.findAllByRestaurantIdAndStatus(restaurantId, status, pageable);
+
+        List<Order> orders = orderPage.getContent()
+                .stream()
                 .map(orderEntityMapper::toDomain)
                 .toList();
+
+        return new Page<>(
+                orders,
+                orderPage.getNumber(),
+                orderPage.getSize(),
+                orderPage.getTotalElements()
+        );
     }
 
     @Override

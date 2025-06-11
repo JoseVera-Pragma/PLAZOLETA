@@ -5,6 +5,7 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.DeliverOrder
 import com.plazoleta.plazoleta_microservice.application.dto.response.OrderResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IOrderHandler;
 import com.plazoleta.plazoleta_microservice.domain.model.OrderStatus;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -61,7 +62,7 @@ public class OrderController {
                     @ApiResponse(responseCode = "404", description = "No se encontraron datos")})
     @PreAuthorize("hasRole('EMPLOYED')")
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<OrderResponseDto>> getOrdersByStatus(@PathVariable OrderStatus status,
+    public ResponseEntity<Page<OrderResponseDto>> getOrdersByStatus(@PathVariable OrderStatus status,
 
                                                                     @Parameter(description = "Número de página (inicia en 0)", example = "0")
                                                                     @RequestParam(defaultValue = "0") @Min(0) int page,

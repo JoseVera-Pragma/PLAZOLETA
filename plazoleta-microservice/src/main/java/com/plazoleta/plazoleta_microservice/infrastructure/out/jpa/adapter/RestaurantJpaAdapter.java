@@ -2,13 +2,14 @@ package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.RestaurantEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IRestaurantEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IRestaurantRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -39,11 +40,20 @@ public class RestaurantJpaAdapter implements IRestaurantPersistencePort {
     }
 
     @Override
-    public List<Restaurant> findAllRestaurants(int pageIndex, int elementsPerPage) {
-        Pageable pageable = PageRequest.of(pageIndex, elementsPerPage);
-        Page<RestaurantEntity> page = restaurantRepository.findAll(pageable);
-        return page.stream()
+    public Page<Restaurant> findAllRestaurants(int pageIndex, int elementsPerPage) {
+        Pageable pageable = PageRequest.of(pageIndex, elementsPerPage, Sort.by(Sort.Direction.ASC, "name"));
+        org.springframework.data.domain.Page<RestaurantEntity> restaurantPage = restaurantRepository.findAll(pageable);
+
+        List<Restaurant> restaurants = restaurantPage.getContent()
+                .stream()
                 .map(restaurantEntityMapper::toRestaurant)
                 .toList();
+
+        return new Page<>(
+                restaurants,
+                restaurantPage.getNumber(),
+                restaurantPage.getSize(),
+                restaurantPage.getTotalElements()
+        );
     }
 }

@@ -4,6 +4,7 @@ import com.plazoleta.plazoleta_microservice.application.dto.request.DishRequestD
 import com.plazoleta.plazoleta_microservice.application.dto.request.DishUpdateRequestDto;
 import com.plazoleta.plazoleta_microservice.application.dto.response.DishResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,8 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/dishes")
@@ -59,7 +58,7 @@ public class DishController {
     @PatchMapping("/{dishId}")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<Void> updateDishPriceAndDescription(@PathVariable Long dishId,
-                                           @Valid @RequestBody DishUpdateRequestDto dishUpdateRequestDto) {
+                                                              @Valid @RequestBody DishUpdateRequestDto dishUpdateRequestDto) {
         dishHandler.updateDishPriceAndDescription(dishId, dishUpdateRequestDto);
         return ResponseEntity.noContent().build();
     }
@@ -99,12 +98,12 @@ public class DishController {
     )
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/restaurant/{restaurantId}/category/{categoryId}")
-    public List<DishResponseDto> getDishesByCategory(
+    public Page<DishResponseDto> getDishesByCategory(
             @PathVariable Long restaurantId,
             @PathVariable Long categoryId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) int size
     ) {
-        return dishHandler.getDishesByRestaurantAndCategory(restaurantId,categoryId, page, size);
+        return dishHandler.getDishesByRestaurantAndCategory(restaurantId, categoryId, page, size);
     }
 }

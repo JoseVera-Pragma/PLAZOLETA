@@ -2,6 +2,8 @@ package com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.adapter;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 import com.plazoleta.plazoleta_microservice.domain.spi.IDishPersistencePort;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
+import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.entity.DishEntity;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.mapper.IDishEntityMapper;
 import com.plazoleta.plazoleta_microservice.infrastructure.out.jpa.repository.IDishRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,12 +37,22 @@ public class DishJpaAdapter implements IDishPersistencePort {
     }
 
     @Override
-    public List<Dish> findAllDishesByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, int pageIndex, int elementsPerPage) {
+    public Page<Dish> findAllDishesByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, int pageIndex, int elementsPerPage) {
         Pageable pageable = PageRequest.of(pageIndex, elementsPerPage);
 
-        return dishRepository.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable)
+        org.springframework.data.domain.Page<DishEntity> dishPage =
+                dishRepository.findAllByRestaurantIdAndCategoryId(restaurantId, categoryId, pageable);
+
+        List<Dish> dishes = dishPage.getContent().stream()
                 .map(dishEntityMapper::toModel)
                 .toList();
+
+        return new Page<>(
+                dishes,
+                dishPage.getNumber(),
+                dishPage.getSize(),
+                dishPage.getTotalElements()
+        );
     }
 
     @Override

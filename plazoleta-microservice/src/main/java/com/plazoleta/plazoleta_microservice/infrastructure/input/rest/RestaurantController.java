@@ -8,6 +8,7 @@ import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantR
 import com.plazoleta.plazoleta_microservice.application.dto.response.RestaurantResumeResponseDto;
 import com.plazoleta.plazoleta_microservice.application.handler.IDishHandler;
 import com.plazoleta.plazoleta_microservice.application.handler.IRestaurantHandler;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,8 +25,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/restaurants")
@@ -61,13 +60,13 @@ public class RestaurantController {
     )
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping
-    public List<RestaurantResumeResponseDto> getRestaurants(
+    public Page<RestaurantResumeResponseDto> getRestaurants(
             @Parameter(description = "Número de página (inicia en 0)", example = "0")
             @RequestParam(defaultValue = "0") @Min(0) int page,
 
             @Parameter(description = "Cantidad de elementos por página", example = "10")
             @RequestParam(defaultValue = "10") @Min(1) int size
     ) {
-        return restaurantHandler.restaurantList(page, size);
+        return restaurantHandler.restaurantPage(page, size);
     }
 }
