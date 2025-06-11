@@ -11,6 +11,7 @@ import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.Restaura
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.UserNotFoundException;
 import com.plazoleta.plazoleta_microservice.domain.model.*;
 import com.plazoleta.plazoleta_microservice.domain.spi.*;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -94,7 +95,7 @@ public class OrderUseCase implements IOrderServicePort {
     }
 
     @Override
-    public List<Order> findOrdersByStatusForAuthenticatedEmployee(OrderStatus status, int pageIndex, int elementsPerPage) {
+    public Page<Order> findOrdersByStatusForAuthenticatedEmployee(OrderStatus status, int pageIndex, int elementsPerPage) {
         Long employedId = authenticatedUserPort.getCurrentUserId().orElseThrow(
                 () -> new UserNotFoundException("User not found."));
 
@@ -248,7 +249,7 @@ public class OrderUseCase implements IOrderServicePort {
                 );
 
         if (!order.getStatus().equals(OrderStatus.PENDING)) {
-            throw new InvalidOrderStatusException("We feel it, your order is already in preparation and cannot be canceled");
+            throw new InvalidOrderStatusException("Sorry, your order is already in preparation and cannot be canceled");
         }
 
         Long customerId = authenticatedUserPort.getCurrentUserId()

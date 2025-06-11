@@ -10,6 +10,7 @@ import com.plazoleta.plazoleta_microservice.domain.model.Category;
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.spi.*;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.domain.validator.DishValidator;
 
 import java.util.List;
@@ -75,6 +76,8 @@ public class DishUseCase implements IDishServicePort {
 
         Dish updatedDish = existingDish.withPriceAndDescription(dish.getPrice(), dish.getDescription());
 
+        DishValidator.validate(updatedDish);
+
         dishPersistencePort.updateDish(updatedDish);
     }
 
@@ -102,7 +105,7 @@ public class DishUseCase implements IDishServicePort {
     }
 
     @Override
-    public List<Dish> findAllDishesByRestaurantIdAndCategoryId(Long restaurantId,Long categoryId, int pageIndex, int elementsPerPage) {
+    public Page<Dish> findAllDishesByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, int pageIndex, int elementsPerPage) {
 
         categoryPersistencePort.findCategoryById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with Id '" + categoryId + "' not found"));

@@ -3,13 +3,12 @@ package com.plazoleta.plazoleta_microservice.domain.usecase;
 import com.plazoleta.plazoleta_microservice.domain.api.IRestaurantServicePort;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.DuplicateNitException;
 import com.plazoleta.plazoleta_microservice.domain.exception.restaurant.InvalidUserRoleException;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 import com.plazoleta.plazoleta_microservice.domain.model.Restaurant;
 import com.plazoleta.plazoleta_microservice.domain.model.User;
 import com.plazoleta.plazoleta_microservice.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.plazoleta_microservice.domain.spi.IUserServiceClientPort;
 import com.plazoleta.plazoleta_microservice.domain.validator.RestaurantValidator;
-
-import java.util.List;
 
 public class RestaurantUseCase implements IRestaurantServicePort {
 
@@ -39,7 +38,7 @@ public class RestaurantUseCase implements IRestaurantServicePort {
     }
 
     @Override
-    public List<Restaurant> findAllRestaurants(int pageIndex, int elementsPerPage){
+    public Page<Restaurant> findAllRestaurants(int pageIndex, int elementsPerPage){
         return restaurantPersistencePort.findAllRestaurants(pageIndex, elementsPerPage);
     }
 }

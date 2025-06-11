@@ -1,8 +1,7 @@
 package com.plazoleta.plazoleta_microservice.domain.api;
 
 import com.plazoleta.plazoleta_microservice.domain.model.Dish;
-
-import java.util.List;
+import com.plazoleta.plazoleta_microservice.domain.util.Page;
 
 public interface IDishServicePort {
     Dish saveDish(Dish dish);
@@ -13,5 +12,5 @@ public interface IDishServicePort {
 
     void changeDishStatus(Long dishId, boolean activate);
 
-    List<Dish> findAllDishesByRestaurantIdAndCategoryId(Long restaurantId,Long categoryId, int pageIndex, int elementsPerPage);
+    Page<Dish> findAllDishesByRestaurantIdAndCategoryId(Long restaurantId, Long categoryId, int pageIndex, int elementsPerPage);
 }
